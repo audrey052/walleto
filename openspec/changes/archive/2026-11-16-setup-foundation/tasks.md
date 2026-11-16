@@ -12,7 +12,7 @@
 - [x] 2.1 Create the `accounts` app and an `accounts.User` model: extends `AbstractUser`, no `username`, unique `email` as `USERNAME_FIELD`, `full_name` field, email saved lowercased
 - [x] 2.2 Write the user manager with `create_user` and `create_superuser` that work without a username
 - [x] 2.3 Set `AUTH_USER_MODEL = "accounts.User"`, then run `makemigrations` and the first `migrate`
-- [ ] 2.4 Register the user model in the admin (done), create a superuser with `python manage.py createsuperuser`, and sign in to `/admin` with an email address (developer, needs a personal password)
+- [x] 2.4 Register the user model in the admin (done), create a superuser with `python manage.py createsuperuser`, and sign in to `/admin` with an email address (developer, needs a personal password)
 
 ## 3. Tailwind, static assets and tokens
 
@@ -67,7 +67,7 @@
 
 ## 10. Wrap-up
 
-- [ ] 10.1 Check every page at 1440px and 390px against docs/STYLE.md and the Figma design (sign-in, dashboard placeholder and style guide checked by headless screenshots; developer to do a final pass in a real browser)
+- [x] 10.1 Check every page at 1440px and 390px against docs/STYLE.md and the Figma design (sign-in, dashboard placeholder and style guide checked by headless screenshots; developer to do a final pass in a real browser)
 - [x] 10.2 Add "how to run locally" (venv, `npm install`, `npm run css:watch`, `runserver`) to README.md
 - [x] 10.3 Update docs/decisions.md with the decisions from design.md that are not there yet
 - [x] 10.4 Run `openspec validate setup-foundation --strict` and fix any errors

@@ -2,7 +2,7 @@
 
 Implementation log for this change: everything that was created or modified, and where the result differs from the plan in `proposal.md`, `design.md` and `tasks.md`.
 
-- **Status:** implemented, not archived yet (open: task 2.4 superuser, task 10.1 final browser check)
+- **Status:** implemented and archived (all 42 tasks done)
 - **Date:** 2026-11-16
 - **Tests:** 34 passing (`python manage.py test`)
 - **Validation:** `openspec validate setup-foundation --strict` passes
@@ -127,10 +127,8 @@ Implementation log for this change: everything that was created or modified, and
 
 - Automated: 34 tests pass; `manage.py check` reports no issues.
 - Visual (headless Edge screenshots): sign-in page at 1440px, dashboard placeholder at 1440px and 390px (no horizontal scroll, all six items in the bottom navigation), style guide at 1440px.
-- Not yet done: a pass in a real browser of sidebar collapse, profile menu, toast timing and the style guide modal (task 10.1).
+- Manual: superuser sign-in at `/admin/` and a full pass in a real browser (task 10.1), done by the developer.
 
 ## Open items before archiving
 
-1. Task 2.4: `python manage.py createsuperuser`, then sign in at `/admin/` with the email address.
-2. Task 10.1: check every page in a real browser at desktop and phone width.
-3. Then run `openspec archive setup-foundation`.
+None. Archived on 2026-11-16 after tasks 2.4 and 10.1 were confirmed; specs `user-auth`, `app-shell` and `money-format` moved to `openspec/specs/`.

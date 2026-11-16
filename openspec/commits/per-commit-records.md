@@ -3,7 +3,7 @@
 **Created:** 2026-11-16
 **Last edited:** 2026-11-16
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `3f2dae8` feat: add per-commit openspec records for mvp 0
 **Branch:** `main`, parent `437f30d`
 **OpenSpec change:** `setup-foundation` (MVP 0)
 **Trigger:** request for one detailed OpenSpec-style Markdown record per commit, in the format of an existing team record (header, Why, Context, What is built, Requirements, Files changed, Verification, Known gaps).
