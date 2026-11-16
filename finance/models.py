@@ -1,7 +1,9 @@
+from datetime import date
+
 from django.conf import settings
 from django.db import models
-from django.db.models import F, Q, Sum
-from django.db.models.functions import Lower
+from django.db.models import F, OuterRef, Q, Subquery, Sum
+from django.db.models.functions import Coalesce, Lower
 from django.utils import timezone
 
 # Muted monogram colors taken from the Figma wallet cards (design.md decision 6).
@@ -19,11 +21,27 @@ class WalletQuerySet(models.QuerySet):
         return self.filter(is_archived=True)
 
     def with_balance(self):
-        """Annotate `balance`. Until transactions exist it equals the starting balance.
+        """Annotate `balance` = starting balance + income - expenses + transfers in - transfers out.
 
-        MVP 2 extends only this method with income, expenses and transfers.
+        Each part is a correlated subquery (design.md decision 3): summing over
+        joined transactions and transfers in one query would multiply rows.
         """
-        return self.annotate(balance=F("initial_balance"))
+
+        def total(queryset):
+            sums = queryset.order_by().values("_group").annotate(total=Sum("amount")).values("total")
+            return Coalesce(Subquery(sums, output_field=models.BigIntegerField()), 0)
+
+        wallet_tx = Transaction.objects.filter(wallet=OuterRef("pk")).annotate(_group=F("wallet"))
+        transfers_in = Transfer.objects.filter(to_wallet=OuterRef("pk")).annotate(_group=F("to_wallet"))
+        transfers_out = Transfer.objects.filter(from_wallet=OuterRef("pk")).annotate(_group=F("from_wallet"))
+
+        return self.annotate(
+            balance=F("initial_balance")
+            + total(wallet_tx.filter(kind=Category.Kind.INCOME))
+            - total(wallet_tx.filter(kind=Category.Kind.EXPENSE))
+            + total(transfers_in)
+            - total(transfers_out)
+        )
 
     def total_balance(self):
         return self.with_balance().aggregate(total=Sum("balance"))["total"] or 0
@@ -160,3 +178,131 @@ class Category(models.Model):
     @property
     def is_default(self):
         return self.user_id is None
+
+
+def month_bounds(year, month):
+    """First day of the month and first day of the next month."""
+    start = date(year, month, 1)
+    end = date(year + (month == 12), month % 12 + 1, 1)
+    return start, end
+
+
+class TransactionQuerySet(models.QuerySet):
+    def for_user(self, user):
+        return self.filter(user=user)
+
+    def in_month(self, year, month):
+        start, end = month_bounds(year, month)
+        return self.filter(date__gte=start, date__lt=end)
+
+    def search(self, text):
+        text = (text or "").strip()
+        if not text:
+            return self
+        return self.filter(Q(description__icontains=text) | Q(note__icontains=text))
+
+    def income(self):
+        return self.filter(kind=Category.Kind.INCOME)
+
+    def expense(self):
+        return self.filter(kind=Category.Kind.EXPENSE)
+
+    def totals(self):
+        """Income, expenses and net in one query (transfers are a separate model)."""
+        sums = self.aggregate(
+            income=Coalesce(Sum("amount", filter=Q(kind=Category.Kind.INCOME)), 0),
+            expense=Coalesce(Sum("amount", filter=Q(kind=Category.Kind.EXPENSE)), 0),
+        )
+        sums["net"] = sums["income"] - sums["expense"]
+        return sums
+
+
+class Transaction(models.Model):
+    class Source(models.TextChoices):
+        MANUAL = "manual", "Manual"
+        AI = "ai", "AI quick add"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="transactions"
+    )
+    wallet = models.ForeignKey(Wallet, on_delete=models.PROTECT, related_name="transactions")
+    category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name="transactions")
+    # Copied from the category on save (design.md decision 2), stored so sums need no join.
+    kind = models.CharField(max_length=10, choices=Category.Kind.choices, editable=False)
+    amount = models.BigIntegerField()
+    date = models.DateField()
+    description = models.CharField(max_length=80)
+    note = models.CharField(max_length=120, blank=True)
+    source = models.CharField(max_length=10, choices=Source.choices, default=Source.MANUAL)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = TransactionQuerySet.as_manager()
+
+    class Meta:
+        ordering = ["-date", "-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["user", "date"]),
+            models.Index(fields=["wallet", "kind"]),
+        ]
+        constraints = [
+            models.CheckConstraint(condition=Q(amount__gt=0), name="transaction_amount_positive"),
+        ]
+
+    def __str__(self):
+        return f"{self.description} ({self.amount})"
+
+    def save(self, *args, **kwargs):
+        self.kind = self.category.kind
+        self.description = self.description.strip()
+        super().save(*args, **kwargs)
+
+    @property
+    def is_income(self):
+        return self.kind == Category.Kind.INCOME
+
+
+class TransferQuerySet(models.QuerySet):
+    def for_user(self, user):
+        return self.filter(user=user)
+
+    def in_month(self, year, month):
+        start, end = month_bounds(year, month)
+        return self.filter(date__gte=start, date__lt=end)
+
+    def touching(self, wallet):
+        return self.filter(Q(from_wallet=wallet) | Q(to_wallet=wallet))
+
+    def search(self, text):
+        text = (text or "").strip()
+        if not text:
+            return self
+        return self.filter(note__icontains=text)
+
+
+class Transfer(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="transfers"
+    )
+    from_wallet = models.ForeignKey(Wallet, on_delete=models.PROTECT, related_name="transfers_out")
+    to_wallet = models.ForeignKey(Wallet, on_delete=models.PROTECT, related_name="transfers_in")
+    amount = models.BigIntegerField()
+    date = models.DateField()
+    note = models.CharField(max_length=120, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = TransferQuerySet.as_manager()
+
+    class Meta:
+        ordering = ["-date", "-created_at", "-id"]
+        indexes = [models.Index(fields=["user", "date"])]
+        constraints = [
+            models.CheckConstraint(condition=Q(amount__gt=0), name="transfer_amount_positive"),
+            models.CheckConstraint(
+                condition=~Q(from_wallet=F("to_wallet")), name="transfer_wallets_differ"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.from_wallet} → {self.to_wallet} ({self.amount})"

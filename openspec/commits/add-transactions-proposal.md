@@ -3,7 +3,7 @@
 **Created:** 2026-11-16
 **Last edited:** 2026-11-16
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `e9d43b7` feat: plan the add-transactions change for transactions, transfers and the demo account
 **Branch:** `main`, parent `8e2ebf5`
 **OpenSpec change:** `add-transactions` (MVP 2), planning
 **Trigger:** WORKPLAN MVP 2 (transactions and transfers), and the question whether money can be moved between wallets: yes, as transfers.
