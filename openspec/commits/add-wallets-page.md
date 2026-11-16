@@ -3,7 +3,7 @@
 **Created:** 2026-11-16
 **Last edited:** 2026-11-16
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `605f480` feat: add wallets page with add, edit, archive and restore
 **Branch:** `main`, parent `44b0090`
 **OpenSpec change:** `add-wallets` (MVP 1), tasks 2.1–2.2, 3.1–3.4, 4.1–4.6, 5.3–5.5
 **Trigger:** spec `wallets`; the Wallets section was still the MVP 0 placeholder.
