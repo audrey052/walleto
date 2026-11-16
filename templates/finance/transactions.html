@@ -1,0 +1,176 @@
+{% extends "layouts/app.html" %}
+{% load icons money %}
+
+{% block title %}Transactions{% endblock %}
+
+{% block content %}
+  <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1>Transactions</h1>
+      <p class="mt-1.5 text-body text-secondary">{{ active_section.subtitle }}</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2.5">
+      {% if can_transfer %}
+        <a href="{% url 'finance:transfer_create' %}?next={{ current_url|urlencode }}" class="btn"
+           hx-get="{% url 'finance:transfer_create' %}?next={{ current_url|urlencode }}" hx-target="#modal-root">
+          {% icon "transactions" size=16 %} Transfer
+        </a>
+      {% endif %}
+      <a href="{% url 'finance:transaction_create' %}" class="btn btn-primary"
+         hx-get="{% url 'finance:transaction_create' %}" hx-target="#modal-root">
+        {% icon "plus" size=16 %} Add transaction
+      </a>
+    </div>
+  </div>
+
+  {# Month navigator #}
+  <div class="mb-5 flex items-center gap-1">
+    <a href="{{ prev_url }}" class="btn-icon" aria-label="Previous month">{% icon "chevron-left" size=18 %}</a>
+    <span class="min-w-[136px] text-center text-section font-semibold">{{ month_start|date:"F Y" }}</span>
+    {% if next_url %}
+      <a href="{{ next_url }}" class="btn-icon" aria-label="Next month">{% icon "chevron-right" size=18 %}</a>
+    {% else %}
+      <span class="btn-icon pointer-events-none opacity-30" aria-hidden="true">{% icon "chevron-right" size=18 %}</span>
+    {% endif %}
+  </div>
+
+  <section class="panel">
+    {# Filters: a plain GET form, upgraded with HTMX (design decision 5) #}
+    <form method="get" action="{% url 'finance:transactions' %}" role="search"
+          class="flex flex-col gap-3 border-b border-border p-4 md:flex-row md:items-center md:px-6"
+          hx-get="{% url 'finance:transactions' %}" hx-target="#results" hx-select="#results" hx-swap="outerHTML"
+          hx-push-url="true" hx-trigger="change, input changed delay:300ms from:find input[name=q]">
+      <input type="hidden" name="month" value="{{ month_param }}">
+      <label class="relative flex-1">
+        <span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted">{% icon "search" size=17 %}</span>
+        <input type="search" name="q" value="{{ query }}" placeholder="Search transactions…"
+               aria-label="Search transactions" class="input pl-9" autocomplete="off">
+      </label>
+      <select name="wallet" class="input md:w-48" aria-label="Filter by wallet">
+        <option value="">All wallets</option>
+        {% for w in wallet_options %}
+          <option value="{{ w.pk }}" {% if selected_wallet.pk == w.pk %}selected{% endif %}>{{ w.name }}{% if w.is_archived %} (archived){% endif %}</option>
+        {% endfor %}
+      </select>
+      <select name="category" class="input md:w-52" aria-label="Filter by category">
+        <option value="">All categories</option>
+        <optgroup label="Expense">
+          {% for c in category_options %}{% if c.kind == "expense" %}<option value="{{ c.pk }}" {% if selected_category.pk == c.pk %}selected{% endif %}>{{ c.name }}</option>{% endif %}{% endfor %}
+        </optgroup>
+        <optgroup label="Income">
+          {% for c in category_options %}{% if c.kind == "income" %}<option value="{{ c.pk }}" {% if selected_category.pk == c.pk %}selected{% endif %}>{{ c.name }}</option>{% endif %}{% endfor %}
+        </optgroup>
+      </select>
+      <noscript><button type="submit" class="btn">Apply</button></noscript>
+    </form>
+
+    <div id="results">
+      {# Month summary (transfers excluded) #}
+      <div class="grid divide-y divide-border border-b border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        <div class="flex items-baseline justify-between gap-3 px-4 py-3 sm:block sm:py-4 md:px-6">
+          <p class="eyebrow">Income</p>
+          <p class="text-[18px] font-medium sm:mt-1 md:text-[22px]">{% amount summary.income kind="income" %}</p>
+        </div>
+        <div class="flex items-baseline justify-between gap-3 px-4 py-3 sm:block sm:py-4 md:px-6">
+          <p class="eyebrow">Expenses</p>
+          <p class="text-[18px] font-medium sm:mt-1 md:text-[22px]">{% amount summary.expense %}</p>
+        </div>
+        <div class="flex items-baseline justify-between gap-3 px-4 py-3 sm:block sm:py-4 md:px-6">
+          <p class="eyebrow">Net</p>
+          <p class="text-[18px] font-medium sm:mt-1 md:text-[22px] {% if summary.net > 0 %}text-forest{% elif summary.net < 0 %}text-clay{% endif %}">{% amount summary.net %}</p>
+        </div>
+      </div>
+
+      {% if has_filters %}
+        <div class="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5 text-caption text-muted md:px-6">
+          <span>{{ entry_count }} result{{ entry_count|pluralize }} in {{ month_start|date:"F Y" }}</span>
+          <a href="{{ clear_url }}" class="btn-text text-caption">Clear filters</a>
+        </div>
+      {% endif %}
+
+      {% if days %}
+        {# Column headings (desktop) #}
+        <div class="hidden grid-cols-[minmax(0,1fr)_170px_130px_150px] gap-4 border-b border-border px-6 py-2.5 text-caption text-muted md:grid">
+          <span>Transaction</span><span>Category</span><span>Wallet</span><span class="text-right">Amount</span>
+        </div>
+        {% for day in days %}
+          <div class="flex items-center justify-between bg-paper px-4 py-2 text-caption md:px-6">
+            <span class="font-semibold text-secondary">{{ day.date|date:"l, j M" }}</span>
+            <span class="text-muted">{% if day.net > 0 %}{% amount day.net kind="income" %}{% elif day.net < 0 %}{% amount day.net %}{% endif %}</span>
+          </div>
+          <ul class="divide-y divide-border border-y border-border">
+            {% for entry, type in day.entries %}
+              <li>
+                {% if type == "transaction" %}
+                  <a href="{% url 'finance:transaction_edit' entry.pk %}?next={{ current_url|urlencode }}"
+                     hx-get="{% url 'finance:transaction_edit' entry.pk %}?next={{ current_url|urlencode }}" hx-target="#modal-root"
+                     class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 transition-colors hover:bg-hover md:grid-cols-[auto_minmax(0,1fr)_170px_130px_150px] md:gap-4 md:px-6">
+                    <span class="icon-tile" style="color: color-mix(in srgb, {{ entry.category.color }} 75%, #1C1B18)">{% icon entry.category.icon size=18 %}</span>
+                    <span class="min-w-0">
+                      <span class="block truncate text-control font-semibold">{{ entry.description }}</span>
+                      <span class="block truncate text-caption text-muted">
+                        <span class="md:hidden">{{ entry.category.name }} · {{ entry.wallet.name }}{% if entry.note %} · {% endif %}</span>{{ entry.note }}
+                      </span>
+                    </span>
+                    <span class="hidden md:block">{% include "components/category_chip.html" with name=entry.category.name color=entry.category.color %}</span>
+                    <span class="hidden truncate text-control text-secondary md:block">{{ entry.wallet.name }}</span>
+                    <span class="text-right text-control font-medium">{% if entry.is_income %}{% amount entry.amount kind="income" %}{% else %}{% amount entry.amount kind="expense" %}{% endif %}</span>
+                  </a>
+                {% else %}
+                  <a href="{% url 'finance:transfer_edit' entry.pk %}?next={{ current_url|urlencode }}"
+                     hx-get="{% url 'finance:transfer_edit' entry.pk %}?next={{ current_url|urlencode }}" hx-target="#modal-root"
+                     class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 transition-colors hover:bg-hover md:grid-cols-[auto_minmax(0,1fr)_170px_130px_150px] md:gap-4 md:px-6">
+                    <span class="grid size-9 shrink-0 place-items-center rounded-panel border border-border bg-paper text-secondary">{% icon "transactions" size=18 %}</span>
+                    <span class="min-w-0">
+                      <span class="block truncate text-control font-semibold">{{ entry.from_wallet.name }} → {{ entry.to_wallet.name }}</span>
+                      <span class="block truncate text-caption text-muted">Transfer{% if entry.note %} · {{ entry.note }}{% endif %}</span>
+                    </span>
+                    <span class="hidden md:block"><span class="chip" style="--chip: #92918A">Transfer</span></span>
+                    <span class="hidden truncate text-control text-secondary md:block">{{ entry.from_wallet.name }} → {{ entry.to_wallet.name }}</span>
+                    <span class="text-right text-control font-medium text-secondary">{% amount entry.amount %}</span>
+                  </a>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% endfor %}
+
+        {% if page.paginator.num_pages > 1 %}
+          <nav class="flex items-center justify-between gap-3 px-4 py-3 md:px-6" aria-label="Pages">
+            {% if page_prev_url %}
+              <a href="{{ page_prev_url }}" class="btn" hx-get="{{ page_prev_url }}" hx-target="#results" hx-select="#results" hx-swap="outerHTML" hx-push-url="true">{% icon "chevron-left" size=16 %} Previous</a>
+            {% else %}<span></span>{% endif %}
+            <span class="text-caption text-muted">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+            {% if page_next_url %}
+              <a href="{{ page_next_url }}" class="btn" hx-get="{{ page_next_url }}" hx-target="#results" hx-select="#results" hx-swap="outerHTML" hx-push-url="true">Next {% icon "chevron-right" size=16 %}</a>
+            {% else %}<span></span>{% endif %}
+          </nav>
+        {% endif %}
+      {% elif has_filters %}
+        <div class="empty-state">
+          <span class="empty-state-icon">{% icon "search" size=24 %}</span>
+          <h2>Nothing matches these filters</h2>
+          <p class="mt-2 max-w-sm text-body text-secondary">Try another search, wallet or category for {{ month_start|date:"F Y" }}.</p>
+          <a href="{{ clear_url }}" class="btn mt-6">Clear filters</a>
+        </div>
+      {% elif not has_wallets %}
+        <div class="empty-state">
+          <span class="empty-state-icon">{% icon "wallet" size=24 %}</span>
+          <h2>Add a wallet first</h2>
+          <p class="mt-2 max-w-sm text-body text-secondary">Every transaction belongs to a wallet, such as cash, a bank account or GoPay.</p>
+          <a href="{% url 'finance:wallets' %}" class="btn btn-primary mt-6">Go to Wallets</a>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <span class="empty-state-icon">{% icon "transactions" size=24 %}</span>
+          <h2>No transactions in {{ month_start|date:"F Y" }}</h2>
+          <p class="mt-2 max-w-sm text-body text-secondary">Add what you spent or received to see where your money goes.</p>
+          <a href="{% url 'finance:transaction_create' %}" class="btn btn-primary mt-6"
+             hx-get="{% url 'finance:transaction_create' %}" hx-target="#modal-root">{% icon "plus" size=16 %} Add transaction</a>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <div id="modal-root"></div>
+{% endblock %}

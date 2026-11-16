@@ -9,10 +9,18 @@
       <h1>Wallets</h1>
       <p class="mt-1.5 text-body text-secondary">{{ active_section.subtitle }}</p>
     </div>
-    <a href="{% url 'finance:wallet_create' %}" class="btn btn-primary self-start sm:self-auto"
-       hx-get="{% url 'finance:wallet_create' %}" hx-target="#modal-root">
-      {% icon "plus" size=16 %} Add wallet
-    </a>
+    <div class="flex flex-wrap items-center gap-2.5">
+      {% if wallets|length >= 2 %}
+        <a href="{% url 'finance:transfer_create' %}?next={% url 'finance:wallets' %}" class="btn"
+           hx-get="{% url 'finance:transfer_create' %}?next={% url 'finance:wallets' %}" hx-target="#modal-root">
+          {% icon "transactions" size=16 %} Transfer
+        </a>
+      {% endif %}
+      <a href="{% url 'finance:wallet_create' %}" class="btn btn-primary"
+         hx-get="{% url 'finance:wallet_create' %}" hx-target="#modal-root">
+        {% icon "plus" size=16 %} Add wallet
+      </a>
+    </div>
   </div>
 
   {% if wallets %}
@@ -33,16 +41,18 @@
             <h2 class="truncate">{{ wallet.name }}</h2>
             <span class="shrink-0 text-caption text-muted">{{ wallet.get_type_display }}</span>
           </div>
-          <p class="text-[28px] font-medium tracking-[-0.8px]">{% amount wallet.balance %}</p>
+          <p class="text-[28px] font-medium tracking-[-0.8px] {% if wallet.balance < 0 %}text-clay{% endif %}">{% amount wallet.balance %}</p>
           <div class="mt-6 flex items-center justify-between gap-3 border-t border-border pt-4">
-            <span class="text-caption text-muted">Added {{ wallet.created_at|date:"j M Y" }}</span>
-            <div class="flex items-center gap-4">
-              <a href="{% url 'finance:wallet_edit' wallet.pk %}" class="btn-text"
+            <a href="{% url 'finance:transactions' %}?wallet={{ wallet.pk }}" class="btn-text">
+              View activity {% icon "arrow-right" size=15 %}
+            </a>
+            <div class="-mr-2 flex items-center gap-1">
+              <a href="{% url 'finance:wallet_edit' wallet.pk %}" class="btn-icon size-8"
                  hx-get="{% url 'finance:wallet_edit' wallet.pk %}" hx-target="#modal-root"
-                 aria-label="Edit {{ wallet.name }}">{% icon "edit" size=15 %} Edit</a>
-              <a href="{% url 'finance:wallet_archive' wallet.pk %}" class="btn-text text-secondary hover:text-ink"
+                 aria-label="Edit {{ wallet.name }}" title="Edit">{% icon "edit" size=16 %}</a>
+              <a href="{% url 'finance:wallet_archive' wallet.pk %}" class="btn-icon size-8"
                  hx-get="{% url 'finance:wallet_archive' wallet.pk %}" hx-target="#modal-root"
-                 aria-label="Archive {{ wallet.name }}">{% icon "archive" size=15 %} Archive</a>
+                 aria-label="Archive {{ wallet.name }}" title="Archive">{% icon "archive" size=16 %}</a>
             </div>
           </div>
         </article>

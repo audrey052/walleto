@@ -1,0 +1,6 @@
+{% load money %}
+<p class="text-body text-secondary">
+  The transfer of <strong class="font-semibold text-ink">{{ record.amount|rupiah }}</strong>
+  from {{ record.from_wallet.name }} to {{ record.to_wallet.name }} on {{ record.date|date:"j M Y" }} will be removed,
+  and both balances are updated. This can't be undone.
+</p>

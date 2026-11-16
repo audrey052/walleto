@@ -1,0 +1,361 @@
+from datetime import date, datetime, timedelta, timezone as dt_timezone
+from unittest import mock
+
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.urls import reverse
+from django.utils import timezone
+
+from finance.forms import TransactionForm, TransferForm
+from finance.models import Category, Transaction, Transfer, Wallet
+
+User = get_user_model()
+HTMX = {"HTTP_HX_REQUEST": "true"}
+# Freeze "today" at 16 Nov 2026, 10:00 in Jakarta (03:00 UTC).
+NOW = datetime(2026, 11, 16, 3, 0, tzinfo=dt_timezone.utc)
+
+
+def make_user(email="aditya@example.com", name="Aditya Ramadhan"):
+    return User.objects.create_user(email=email, password="quiet-ledger-2026", full_name=name)
+
+
+def cat(name):
+    return Category.objects.get(user=None, name=name)
+
+
+class ActivityTestCase(TestCase):
+    def setUp(self):
+        patcher = mock.patch("django.utils.timezone.now", return_value=NOW)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.user = make_user()
+        self.client.force_login(self.user)
+        self.bca = Wallet.objects.create(user=self.user, name="BCA", initial_balance=1_000_000)
+        self.gopay = Wallet.objects.create(user=self.user, name="GoPay", type="ewallet")
+        self.url = reverse("finance:transactions")
+
+    def tx(self, description="GoFood", amount=67_500, category="Food & drinks", wallet=None, day=date(2026, 11, 14), note=""):
+        return Transaction.objects.create(
+            user=self.user, wallet=wallet or self.gopay, category=cat(category),
+            amount=amount, date=day, description=description, note=note,
+        )
+
+    def transfer(self, amount=200_000, day=date(2026, 11, 12), source=None, target=None):
+        return Transfer.objects.create(
+            user=self.user, from_wallet=source or self.bca, to_wallet=target or self.gopay,
+            amount=amount, date=day,
+        )
+
+    def balance(self, wallet):
+        return Wallet.objects.with_balance().get(pk=wallet.pk).balance
+
+
+class TransactionFormTests(ActivityTestCase):
+    def data(self, **overrides):
+        data = {
+            "description": "GoFood", "amount": "67.500", "category": cat("Food & drinks").pk,
+            "wallet": self.gopay.pk, "date": "2026-11-16", "note": "",
+        }
+        data.update(overrides)
+        return data
+
+    def test_valid_and_kind_from_category(self):
+        form = TransactionForm(self.data(category=cat("Salary").pk), user=self.user)
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.save().kind, "income")
+
+    def test_defaults_to_today_in_jakarta(self):
+        self.assertEqual(TransactionForm(user=self.user).initial["date"], date(2026, 11, 16))
+
+    def test_zero_or_empty_amount(self):
+        for amount in ["0", ""]:
+            with self.subTest(amount=amount):
+                form = TransactionForm(self.data(amount=amount), user=self.user)
+                self.assertEqual(form.errors["amount"], ["Amount must be greater than 0."])
+
+    def test_future_date(self):
+        form = TransactionForm(self.data(date="2026-11-17"), user=self.user)
+        self.assertEqual(form.errors["date"], ["Date can't be in the future."])
+
+    def test_only_active_own_wallets_offered(self):
+        archived = Wallet.objects.create(user=self.user, name="OVO")
+        archived.archive()
+        theirs = Wallet.objects.create(user=make_user("sari@example.com", "Sari"), name="Mandiri")
+        offered = set(TransactionForm(user=self.user).fields["wallet"].queryset)
+        self.assertEqual(offered, {self.bca, self.gopay})
+        form = TransactionForm(self.data(wallet=theirs.pk), user=self.user)
+        self.assertIn("wallet", form.errors)
+        form = TransactionForm(self.data(wallet=archived.pk), user=self.user)
+        self.assertIn("wallet", form.errors)
+
+    def test_archived_wallet_kept_when_editing(self):
+        record = self.tx()
+        self.gopay.archive()
+        form = TransactionForm(instance=record, user=self.user)
+        self.assertIn(self.gopay, form.fields["wallet"].queryset)
+
+    def test_other_users_category_rejected(self):
+        other = make_user("sari@example.com", "Sari")
+        pets = Category.objects.create(user=other, name="Pets", kind="expense", color="#1F5C4A")
+        form = TransactionForm(self.data(category=pets.pk), user=self.user)
+        self.assertIn("category", form.errors)
+
+    def test_categories_grouped_by_kind(self):
+        choices = TransactionForm(user=self.user).fields["category"].widget.choices
+        self.assertEqual([group for group, _ in choices[1:]], ["Expense", "Income"])
+
+
+class TransferFormTests(ActivityTestCase):
+    def data(self, **overrides):
+        data = {"from_wallet": self.bca.pk, "to_wallet": self.gopay.pk, "amount": "200.000", "date": "2026-11-16", "note": ""}
+        data.update(overrides)
+        return data
+
+    def test_valid(self):
+        form = TransferForm(self.data(), user=self.user)
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_same_wallet(self):
+        form = TransferForm(self.data(to_wallet=self.bca.pk), user=self.user)
+        self.assertEqual(form.errors["to_wallet"], ["Choose two different wallets."])
+
+    def test_needs_two_wallets(self):
+        loner = make_user("solo@example.com", "Solo")
+        Wallet.objects.create(user=loner, name="Cash", type="cash")
+        self.assertFalse(TransferForm(user=loner).has_enough_wallets)
+        self.assertTrue(TransferForm(user=self.user).has_enough_wallets)
+
+    def test_other_users_wallet_rejected(self):
+        theirs = Wallet.objects.create(user=make_user("sari@example.com", "Sari"), name="Mandiri")
+        form = TransferForm(self.data(to_wallet=theirs.pk), user=self.user)
+        self.assertIn("to_wallet", form.errors)
+
+
+class TransactionsPageTests(ActivityTestCase):
+    def test_defaults_to_current_month_with_summary(self):
+        self.tx("Salary", 12_500_000, "Salary", self.bca, date(2026, 11, 1))
+        self.tx("GoFood", 5_847_500)
+        self.transfer(500_000)
+        self.tx("October", 999, day=date(2026, 10, 31))
+        response = self.client.get(self.url)
+        self.assertEqual(response.context["month_param"], "2026-11")
+        self.assertEqual(response.context["summary"], {"income": 12_500_000, "expense": 5_847_500, "net": 6_652_500})
+        self.assertNotContains(response, "October")
+        self.assertIsNone(response.context["next_url"])
+
+    def test_previous_month_and_bad_or_future_values(self):
+        self.tx("October", 999, day=date(2026, 10, 31))
+        response = self.client.get(self.url, {"month": "2026-10"})
+        self.assertContains(response, "October")
+        self.assertIn("month=2026-11", response.context["next_url"])
+        for bad in ["2026-13", "abc", "2027-01"]:
+            with self.subTest(month=bad):
+                self.assertEqual(self.client.get(self.url, {"month": bad}).context["month_param"], "2026-11")
+
+    def test_day_groups_with_subtotals_excluding_transfers(self):
+        self.tx("GoFood", 67_500)
+        self.tx("Grab", 32_000, "Transport")
+        self.transfer(200_000, day=date(2026, 11, 14))
+        response = self.client.get(self.url)
+        day = response.context["days"][0]
+        self.assertEqual(day["date"], date(2026, 11, 14))
+        self.assertEqual(day["net"], -99_500)
+        self.assertEqual(len(day["entries"]), 3)
+        self.assertContains(response, "Saturday, 14 Nov")
+        self.assertContains(response, "BCA → GoPay")
+
+    def test_newest_day_first(self):
+        self.tx("Older", day=date(2026, 11, 2))
+        self.tx("Newer", day=date(2026, 11, 15))
+        days = self.client.get(self.url).context["days"]
+        self.assertEqual([d["date"] for d in days], [date(2026, 11, 15), date(2026, 11, 2)])
+
+    def test_search_is_case_insensitive_and_covers_notes(self):
+        self.tx("Kopi Kenangan")
+        self.tx("Fore", note="kopi susu")
+        self.tx("Indomaret", category="Shopping")
+        response = self.client.get(self.url, {"q": "KOPI"})
+        names = [e.description for d in response.context["days"] for e, kind in d["entries"]]
+        self.assertCountEqual(names, ["Kopi Kenangan", "Fore"])
+
+    def test_wallet_filter_keeps_its_transfers(self):
+        self.tx("GoFood", wallet=self.gopay)
+        self.tx("Indomaret", wallet=self.bca, category="Shopping")
+        self.transfer()
+        entries = [e for d in self.client.get(self.url, {"wallet": self.gopay.pk}).context["days"] for e in d["entries"]]
+        self.assertEqual(sorted(kind for _, kind in entries), ["transaction", "transfer"])
+
+    def test_category_filter_hides_transfers(self):
+        self.tx("GoFood")
+        self.transfer()
+        response = self.client.get(self.url, {"category": cat("Food & drinks").pk})
+        kinds = [kind for d in response.context["days"] for _, kind in d["entries"]]
+        self.assertEqual(kinds, ["transaction"])
+
+    def test_filters_ignore_other_users_ids(self):
+        other = make_user("sari@example.com", "Sari")
+        theirs = Wallet.objects.create(user=other, name="Mandiri")
+        self.tx("GoFood")
+        response = self.client.get(self.url, {"wallet": theirs.pk})
+        self.assertIsNone(response.context["selected_wallet"])
+        self.assertContains(response, "GoFood")
+
+    def test_no_results_empty_state(self):
+        self.tx("GoFood")
+        response = self.client.get(self.url, {"q": "nothing-like-this"})
+        self.assertContains(response, "Nothing matches these filters")
+        self.assertContains(response, "Clear filters")
+
+    def test_pagination_keeps_full_day_subtotal(self):
+        for i in range(60):
+            self.tx(f"Item {i}", 1_000, day=date(2026, 11, 14))
+        first = self.client.get(self.url)
+        second = self.client.get(self.url, {"page": 2})
+        self.assertEqual(first.context["page"].paginator.num_pages, 2)
+        self.assertEqual(sum(len(d["entries"]) for d in first.context["days"]), 50)
+        self.assertEqual(sum(len(d["entries"]) for d in second.context["days"]), 10)
+        self.assertEqual(second.context["days"][0]["net"], -60_000)
+        self.assertIn("page=2", first.context["page_next_url"])
+
+    def test_only_own_transactions_listed(self):
+        other = make_user("sari@example.com", "Sari")
+        theirs = Wallet.objects.create(user=other, name="Mandiri")
+        Transaction.objects.create(user=other, wallet=theirs, category=cat("Others"), amount=1, date=date(2026, 11, 10), description="Secret")
+        self.assertNotContains(self.client.get(self.url), "Secret")
+
+    def test_transactions_section_is_active(self):
+        record = self.tx()
+        for url in [self.url, reverse("finance:transaction_edit", args=[record.pk]), reverse("finance:transfer_create")]:
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).context["active_section"]["key"], "transactions")
+
+
+class TransactionCrudTests(ActivityTestCase):
+    def post_create(self, **overrides):
+        data = {
+            "description": "GoFood", "amount": "67.500", "category": cat("Food & drinks").pk,
+            "wallet": self.gopay.pk, "date": "2026-11-14", "note": "",
+        }
+        data.update(overrides)
+        return self.client.post(reverse("finance:transaction_create"), data, **HTMX)
+
+    def test_create_redirects_to_its_month_with_toast(self):
+        response = self.post_create()
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response["HX-Redirect"], f"{self.url}?month=2026-11")
+        self.assertEqual(self.balance(self.gopay), -67_500)
+        self.assertContains(self.client.get(self.url), "Transaction added.")
+
+    def test_create_respects_safe_next_only(self):
+        response = self.post_create(next="/wallets/")
+        self.assertEqual(response["HX-Redirect"], "/wallets/")
+        response = self.post_create(next="https://evil.example.com/")
+        self.assertEqual(response["HX-Redirect"], f"{self.url}?month=2026-11")
+
+    def test_create_error_keeps_modal(self):
+        response = self.post_create(amount="0")
+        self.assertContains(response, "<dialog")
+        self.assertContains(response, "Amount must be greater than 0.")
+        self.assertFalse(Transaction.objects.exists())
+
+    def test_edit_updates_balance(self):
+        record = self.tx()
+        url = reverse("finance:transaction_edit", args=[record.pk])
+        self.assertContains(self.client.get(url, **HTMX), "Delete")
+        self.client.post(url, {
+            "description": "GoFood", "amount": "72.500", "category": cat("Food & drinks").pk,
+            "wallet": self.gopay.pk, "date": "2026-11-14", "note": "",
+        }, **HTMX)
+        self.assertEqual(self.balance(self.gopay), -72_500)
+        self.assertContains(self.client.get(self.url), "Transaction updated.")
+
+    def test_delete_confirms_then_removes(self):
+        record = self.tx()
+        url = reverse("finance:transaction_delete", args=[record.pk])
+        self.assertContains(self.client.get(url, **HTMX), "Delete this transaction?")
+        self.assertTrue(Transaction.objects.filter(pk=record.pk).exists())
+        response = self.client.post(url, **HTMX)
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(Transaction.objects.filter(pk=record.pk).exists())
+        self.assertEqual(self.balance(self.gopay), 0)
+        self.assertContains(self.client.get(self.url), "Transaction deleted.")
+
+    def test_create_without_wallets_explains(self):
+        loner = make_user("solo@example.com", "Solo")
+        self.client.force_login(loner)
+        response = self.client.get(reverse("finance:transaction_create"), **HTMX)
+        self.assertContains(response, "Add a wallet")
+        self.assertNotContains(response, 'type="submit"')
+
+
+class TransferCrudTests(ActivityTestCase):
+    def test_create_moves_money_and_keeps_total(self):
+        total = Wallet.objects.for_user(self.user).active().total_balance()
+        response = self.client.post(reverse("finance:transfer_create"), {
+            "from_wallet": self.bca.pk, "to_wallet": self.gopay.pk, "amount": "200.000", "date": "2026-11-16", "note": "",
+            "next": "/wallets/",
+        }, **HTMX)
+        self.assertEqual(response["HX-Redirect"], "/wallets/")
+        self.assertEqual((self.balance(self.bca), self.balance(self.gopay)), (800_000, 200_000))
+        self.assertEqual(Wallet.objects.for_user(self.user).active().total_balance(), total)
+        self.assertContains(self.client.get("/wallets/"), "Transfer recorded.")
+
+    def test_one_wallet_explains_and_refuses(self):
+        loner = make_user("solo@example.com", "Solo")
+        cash = Wallet.objects.create(user=loner, name="Cash", type="cash")
+        self.client.force_login(loner)
+        url = reverse("finance:transfer_create")
+        self.assertContains(self.client.get(url, **HTMX), "A transfer needs two wallets")
+        self.client.post(url, {"from_wallet": cash.pk, "to_wallet": cash.pk, "amount": "1", "date": "2026-11-16"})
+        self.assertFalse(Transfer.objects.exists())
+
+    def test_edit_and_delete(self):
+        record = self.transfer()
+        self.client.post(reverse("finance:transfer_edit", args=[record.pk]), {
+            "from_wallet": self.bca.pk, "to_wallet": self.gopay.pk, "amount": "50.000", "date": "2026-11-12", "note": "top up",
+        }, **HTMX)
+        self.assertEqual(self.balance(self.gopay), 50_000)
+        self.assertContains(self.client.get(self.url), "Transfer updated.")
+        self.client.post(reverse("finance:transfer_delete", args=[record.pk]), **HTMX)
+        self.assertEqual((self.balance(self.bca), self.balance(self.gopay)), (1_000_000, 0))
+        self.assertContains(self.client.get(self.url), "Transfer deleted.")
+
+
+class WalletsPageActivityTests(ActivityTestCase):
+    def test_cards_show_real_balance_and_activity_link(self):
+        self.tx("GoFood", 67_500)
+        response = self.client.get(reverse("finance:wallets"))
+        balances = {w.name: w.balance for w in response.context["wallets"]}
+        self.assertEqual(balances, {"BCA": 1_000_000, "GoPay": -67_500})
+        self.assertContains(response, f"{self.url}?wallet={self.gopay.pk}")
+        self.assertContains(response, "Rp</span>67.500")
+        self.assertContains(response, "Transfer")
+
+    def test_archived_wallet_history_stays_visible(self):
+        self.tx("GoFood")
+        self.gopay.archive()
+        self.assertContains(self.client.get(self.url), "GoFood")
+
+
+class ActivityPrivacyTests(ActivityTestCase):
+    def setUp(self):
+        super().setUp()
+        other = make_user("sari@example.com", "Sari")
+        a = Wallet.objects.create(user=other, name="Mandiri")
+        b = Wallet.objects.create(user=other, name="Dana")
+        self.their_tx = Transaction.objects.create(user=other, wallet=a, category=cat("Others"), amount=5, date=date(2026, 11, 1), description="Theirs")
+        self.their_transfer = Transfer.objects.create(user=other, from_wallet=a, to_wallet=b, amount=5, date=date(2026, 11, 1))
+
+    def test_other_users_records_are_404(self):
+        for name, pk in [
+            ("finance:transaction_edit", self.their_tx.pk),
+            ("finance:transaction_delete", self.their_tx.pk),
+            ("finance:transfer_edit", self.their_transfer.pk),
+            ("finance:transfer_delete", self.their_transfer.pk),
+        ]:
+            with self.subTest(view=name):
+                url = reverse(name, args=[pk])
+                self.assertEqual(self.client.get(url).status_code, 404)
+                self.assertEqual(self.client.post(url).status_code, 404)
+        self.assertTrue(Transaction.objects.filter(pk=self.their_tx.pk).exists())
+        self.assertTrue(Transfer.objects.filter(pk=self.their_transfer.pk).exists())

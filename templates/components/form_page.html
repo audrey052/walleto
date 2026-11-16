@@ -1,5 +1,5 @@
 {% extends "layouts/app.html" %}
-{# Full-page version of components/modal_form.html, used when JavaScript/HTMX is not involved. #}
+{# Full-page version of components/modal_form.html, used when HTMX is not involved. #}
 
 {% block title %}{{ title }}{% endblock %}
 
@@ -8,12 +8,16 @@
   <section class="panel max-w-xl">
     <form method="post" action="{{ action }}" class="panel-body" novalidate>
       {% csrf_token %}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
       <div class="flex flex-col gap-4">
         {% include body %}
       </div>
       <div class="modal-footer">
-        <a href="{{ cancel_url|default:'/' }}" class="btn">Cancel</a>
-        <button type="submit" class="btn {% if danger %}btn-danger{% else %}btn-primary{% endif %}">{{ submit_label }}</button>
+        {% if delete_url %}<a href="{{ delete_url }}" class="btn-text mr-auto text-clay hover:text-clay">Delete</a>{% endif %}
+        <a href="{{ cancel_url|default:'/' }}" class="btn">{% if hide_submit %}Back{% else %}Cancel{% endif %}</a>
+        {% if not hide_submit %}
+          <button type="submit" class="btn {% if danger %}btn-danger{% else %}btn-primary{% endif %}">{{ submit_label }}</button>
+        {% endif %}
       </div>
     </form>
   </section>

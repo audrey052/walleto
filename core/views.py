@@ -18,10 +18,6 @@ def dashboard(request):
     return _placeholder(request, "dashboard")
 
 
-def transactions(request):
-    return _placeholder(request, "transactions")
-
-
 def budget(request):
     return _placeholder(request, "budget")
 

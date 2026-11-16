@@ -3,7 +3,7 @@
 **Created:** 2026-11-17
 **Last edited:** 2026-11-17
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `a6fbdf7` feat: add transaction and transfer models with computed wallet balances
 **Branch:** `main`, parent `e9d43b7`
 **OpenSpec change:** `add-transactions` (MVP 2), tasks 1.1–1.7
 **Trigger:** specs `transactions`, `transfers` and the `wallets` delta (balance from activity).

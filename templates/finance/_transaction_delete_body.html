@@ -1,0 +1,6 @@
+{% load money %}
+<p class="text-body text-secondary">
+  <strong class="font-semibold text-ink">{{ record.description }}</strong>,
+  {% if record.is_income %}{{ record.amount|rupiah_signed:"income" }}{% else %}{{ record.amount|rupiah_signed:"expense" }}{% endif %}
+  on {{ record.date|date:"j M Y" }} from {{ record.wallet.name }}, will be removed. {{ record.wallet.name }}'s balance is updated. This can't be undone.
+</p>

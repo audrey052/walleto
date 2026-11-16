@@ -18,7 +18,8 @@ SECTIONS = [
         "title": "Transactions",
         "subtitle": "Every income and expense, by date.",
         "icon": "transactions",
-        "url_name": "core:transactions",
+        "url_name": "finance:transactions",
+        "match": ("finance:transaction", "finance:transfer"),
     },
     {
         "key": "wallets",
