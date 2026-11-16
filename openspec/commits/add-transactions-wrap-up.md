@@ -3,7 +3,7 @@
 **Created:** 2026-11-17
 **Last edited:** 2026-11-17
 **Status:** Implemented, with the real-browser check (task 6.1) outstanding
-**Commit:** this commit
+**Commit:** `05a739d` feat: complete the add-transactions change log
 **Branch:** `main`, parent `9e1ba0b`
 **OpenSpec change:** `add-transactions` (MVP 2), tasks 6.2–6.4
 **Trigger:** `openspec/config.yaml` asks for a `changes.md` after a change is implemented.

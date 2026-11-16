@@ -30,7 +30,8 @@ The form offers one category list grouped into Expense and Income; `kind` is set
 - Rejected: a stored balance column. It would drift whenever a transaction is edited or deleted.
 
 ### 4. One month per page; transfers merged in Python
-The page is keyed by `?month=YYYY-MM`. Transactions and transfers for the month (after filters) are fetched in two queries, merged into one list sorted by date and creation time (newest first), and paginated with Django's `Paginator` (50 per page). Day subtotals come from one aggregate query grouped by date over the filtered transactions, so a day split across pages still shows its full subtotal. A month holds at most a few hundred entries, so merging in memory is cheap.
+The page is keyed by `?month=YYYY-MM`. Transactions and transfers for the month (after filters) are fetched in two queries, merged into one list sorted by date and creation time (newest first), and paginated with Django's `Paginator` (50 per page). The summary comes from one aggregate over the filtered transactions, so it covers the whole month regardless of the page. A month holds at most a few hundred entries, so merging in memory is cheap. The same helper (`_activity`) feeds the page and the CSV export, so both always contain the same rows.
+- Changed during implementation: the first version grouped rows by day with daily subtotals. At the developer's request it was replaced by the flat table of the Figma design (Date column, summary line).
 - Rejected: a SQL `UNION` of both tables. More complex to write and to filter, for no gain at this size.
 
 ### 5. Filters as a GET form with HTMX
@@ -39,6 +40,10 @@ The toolbar is a plain GET form. With HTMX, changes trigger `hx-get` on the page
 
 ### 6. Forms only offer the user's own active wallets
 `TransactionForm` and `TransferForm` limit the wallet querysets to `Wallet.objects.for_user(user).active()`, plus the wallets already on the record when editing. The category queryset is `Category.objects.for_user(user)`. Anything else fails as an invalid choice.
+
+### 6b. CSV export with formula protection
+`/transactions/export/` takes the same query parameters as the page and returns every matching entry (not only the current page), with a UTF-8 BOM so Excel shows "→" correctly. Text cells that start with `=`, `+`, `-`, `@`, tab or carriage return get a leading apostrophe, so a description like `=HYPERLINK(...)` can't run as a formula when the file is opened.
+- Rejected: exporting only the visible page. Users expect the whole month.
 
 ### 7. Date rules in Jakarta time
 "Today" is `timezone.localdate()`. Dates after today are rejected. The month navigator never goes past the current month.

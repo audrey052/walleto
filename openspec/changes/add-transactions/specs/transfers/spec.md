@@ -22,11 +22,11 @@ A signed-in user SHALL be able to record a transfer from one of their active wal
 - **THEN** the form explains that a second wallet is needed and offers to add one
 
 ### Requirement: Transfers are not income or expenses
-Transfers SHALL NOT count toward income, expenses, net or daily subtotals. In the Transactions list they SHALL appear in their day as a neutral row showing "From → To" and the amount without a plus or minus sign.
+Transfers SHALL NOT count toward income, expenses or net. In the Transactions table they SHALL appear as a neutral row showing "From → To" as the transaction and the wallet, "Transfer" in the Category column, and the amount without a plus or minus sign.
 
 #### Scenario: Transfer in the list
 - **WHEN** a transfer of Rp200.000 from BCA to GoPay was made on 12 November
-- **THEN** the 12 November group shows a "BCA → GoPay" row with Rp200.000, and that day's subtotal does not include it
+- **THEN** the table shows a "BCA → GoPay" row dated 12 Nov 2026 with Rp200.000, and the month's expenses do not include it
 
 ### Requirement: Edit and delete a transfer
 A user SHALL be able to edit a transfer's wallets, amount, date and note with the same validation, and delete it after confirming. Toasts SHALL say "Transfer updated." and "Transfer deleted."

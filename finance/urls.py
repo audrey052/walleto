@@ -11,6 +11,7 @@ urlpatterns = [
     path("wallets/<int:pk>/archive/", views.wallet_archive, name="wallet_archive"),
     path("wallets/<int:pk>/restore/", views.wallet_restore, name="wallet_restore"),
     path("transactions/", views_activity.transaction_list, name="transactions"),
+    path("transactions/export/", views_activity.transaction_export, name="transactions_export"),
     path("transactions/new/", views_activity.transaction_create, name="transaction_create"),
     path("transactions/<int:pk>/edit/", views_activity.transaction_edit, name="transaction_edit"),
     path("transactions/<int:pk>/delete/", views_activity.transaction_delete, name="transaction_delete"),

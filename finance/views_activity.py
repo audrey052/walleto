@@ -1,13 +1,12 @@
 """Transactions page, and add / edit / delete for transactions and transfers."""
 
+import csv
 from datetime import date
-from itertools import groupby
 from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db.models import Q, Sum
-from django.db.models.functions import Coalesce
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
@@ -51,15 +50,19 @@ def _int_or_none(value):
         return None
 
 
-def transactions_url(year, month, **filters):
+def transactions_url(year, month, *, view="finance:transactions", **filters):
     params = {"month": _month_param(year, month)}
     params.update({k: v for k, v in filters.items() if v})
-    return f"{reverse('finance:transactions')}?{urlencode(params)}"
+    return f"{reverse(view)}?{urlencode(params)}"
 
 
-# ---------- page ----------
+# ---------- shared month + filter query ----------
 
-def transaction_list(request):
+def _activity(request):
+    """The selected month and filters, the filtered querysets and the merged entries.
+
+    Used by the page and by the CSV export, so both always show the same rows.
+    """
     user = request.user
     today = timezone.localdate()
     year, month = _parse_month(request.GET.get("month"), today)
@@ -85,29 +88,33 @@ def transaction_list(request):
         transfers = transfers.search(query)
 
     # Merge both kinds of entries, newest first (design decision 4).
-    entries =[(t, "transaction") for t in transactions] + [(t, "transfer") for t in transfers]
+    entries = [(t, "transaction") for t in transactions] + [(t, "transfer") for t in transfers]
     entries.sort(key=lambda pair: (pair[0].date, pair[0].created_at, pair[0].pk), reverse=True)
+
+    return {
+        "today": today, "year": year, "month": month,
+        "wallets": wallets, "categories": categories,
+        "wallet": wallet, "category": category, "query": query,
+        "transactions": transactions, "entries": entries,
+        "filters": {
+            "wallet": wallet.pk if wallet else None,
+            "category": category.pk if category else None,
+            "q": query,
+        },
+    }
+
+
+# ---------- page ----------
+
+def transaction_list(request):
+    data = _activity(request)
+    today, year, month = data["today"], data["year"], data["month"]
+    wallets, categories = data["wallets"], data["categories"]
+    wallet, category, query = data["wallet"], data["category"], data["query"]
+    transactions, entries, filters = data["transactions"], data["entries"], data["filters"]
 
     page = Paginator(entries, PAGE_SIZE).get_page(request.GET.get("page"))
 
-    # Full-day subtotals from the database, so a day split across pages stays correct.
-    day_totals = {
-        row["date"]: row["income"] - row["expense"]
-        for row in transactions.order_by().values("date").annotate(
-            income=Coalesce(Sum("amount", filter=Q(kind=Category.Kind.INCOME)), 0),
-            expense=Coalesce(Sum("amount", filter=Q(kind=Category.Kind.EXPENSE)), 0),
-        )
-    }
-    days = [
-        {"date": day, "net": day_totals.get(day, 0), "entries": list(items)}
-        for day, items in groupby(page.object_list, key=lambda pair: pair[0].date)
-    ]
-
-    filters = {
-        "wallet": wallet.pk if wallet else None,
-        "category": category.pk if category else None,
-        "q": query,
-    }
     prev_year, prev_month = _shift(year, month, -1)
     next_year, next_month = _shift(year, month, 1)
     is_current = (year, month) == (today.year, today.month)
@@ -125,8 +132,9 @@ def transaction_list(request):
         "page": page,
         "page_prev_url": page_url(page.previous_page_number()) if page.has_previous() else None,
         "page_next_url": page_url(page.next_page_number()) if page.has_next() else None,
-        "days": days,
+        "entries": page.object_list,
         "entry_count": len(entries),
+        "export_url": transactions_url(year, month, view="finance:transactions_export", **filters),
         "wallet_options": wallets.order_by("is_archived", "created_at"),
         "category_options": categories,
         "selected_wallet": wallet,
@@ -139,6 +147,37 @@ def transaction_list(request):
         "current_url": request.get_full_path(),
     }
     return render(request, "finance/transactions.html", context)
+
+
+def _csv_text(value):
+    """Stop spreadsheet apps from running user text as a formula (CSV injection)."""
+    text = str(value)
+    return f"'{text}" if text[:1] in ("=", "+", "-", "@", "\t", "\r") else text
+
+
+def transaction_export(request):
+    """The rows the page shows for the same month and filters, as CSV (all pages)."""
+    data = _activity(request)
+    filename = f"walleto-transactions-{_month_param(data['year'], data['month'])}.csv"
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response.write("﻿")  # BOM so Excel opens UTF-8 (→, é) correctly
+
+    writer = csv.writer(response)
+    writer.writerow(["Date", "Type", "Description", "Note", "Category", "Wallet", "Amount"])
+    for entry, kind in data["entries"]:
+        if kind == "transaction":
+            signed = entry.amount if entry.is_income else -entry.amount
+            writer.writerow([
+                entry.date.isoformat(), entry.get_kind_display(), _csv_text(entry.description),
+                _csv_text(entry.note), _csv_text(entry.category.name), _csv_text(entry.wallet.name), signed,
+            ])
+        else:
+            route = _csv_text(f"{entry.from_wallet.name} → {entry.to_wallet.name}")
+            writer.writerow([
+                entry.date.isoformat(), "Transfer", route, _csv_text(entry.note), "", route, entry.amount,
+            ])
+    return response
 
 
 # ---------- transactions ----------

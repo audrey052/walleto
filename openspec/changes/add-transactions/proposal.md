@@ -9,14 +9,13 @@ Wallets currently show only their starting balance. Walleto becomes useful once 
 - Add income and expense **transactions**: wallet, category, amount, date, description and an optional note.
 - Add **transfers** between two of the user's wallets. A transfer moves money; it is neither income nor expense, so the total across wallets does not change.
 - **Wallet balances are computed** from the starting balance, transactions and transfers. Balances may go below zero.
-- Replace the Transactions placeholder with a page for one month at a time: income, expenses and net for the month; a list grouped by day with daily subtotals; filters for wallet, category and text search that update without a page reload; pagination.
+- Replace the Transactions placeholder with a page for one month at a time, laid out as in the Figma design: a month picker; a toolbar with search, wallet and category filters (updating without a page reload) and Export CSV; a summary line with the entry count, income, expenses and net; a table with Transaction, Category, Wallet, Date and Amount columns; pagination.
 - Add, edit and delete transactions and transfers in modals, with a confirmation before deleting and a toast after every change.
 - A "Transfer" action on the Wallets page, and a "View activity" link on each wallet card that opens its transactions.
 - A `seed_demo` management command and a working "Try demo account" button on the sign-in page.
 
 Out of scope for this MVP:
 - Budgets and the budget warning when a transaction pushes a category over 90% (MVP 3).
-- CSV export (shown in the Figma design; later).
 - Quick add in plain language (MVP 6).
 - Recurring transactions, attachments, multiple currencies.
 

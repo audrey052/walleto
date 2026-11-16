@@ -22,9 +22,11 @@
 - [x] 3.2 Month handling: `?month=YYYY-MM`, default current month, previous/next links, no future months, invalid values fall back to the current month
 - [x] 3.3 Month summary: income, expenses, net (transfers excluded), with the active filters applied
 - [x] 3.4 Filters: wallet, category, search; HTMX `hx-get` with `hx-select`, `hx-push-url`, 300 ms debounce on search; works without JavaScript
-- [x] 3.5 Merged list of transactions and transfers, newest first, 50 per page, day groups with full-day subtotals from one aggregate query
+- [x] 3.5 Merged list of transactions and transfers, newest first, 50 per page (first built with day groups; replaced by the Figma table in 3.8)
 - [x] 3.6 Templates: summary, toolbar, grouped table (desktop) / list (mobile), transfer rows, empty states (no transactions, no matches with "Clear filters"), pagination
-- [x] 3.7 View tests: month boundaries, summary numbers, day subtotals across pages, each filter, transfers with wallet and category filters, search case-insensitive, pagination, HTMX partial response
+- [x] 3.7 View tests: month boundaries, summary numbers, each filter, transfers with wallet and category filters, search case-insensitive, pagination, HTMX partial response
+- [x] 3.8 Match the Figma layout: month picker in the heading, toolbar with Export CSV, summary line, table with Transaction / Category / Wallet / Date / Amount, neutral row icons, sideways scroll on phones; font sizes from docs/STYLE.md
+- [x] 3.9 CSV export of the filtered month (all pages) with formula protection, and tests
 
 ## 4. Add, edit, delete
 

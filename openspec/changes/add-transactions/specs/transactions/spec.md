@@ -29,20 +29,34 @@ A signed-in user SHALL be able to add a transaction with a description (1 to 80 
 - **WHEN** a user opens the add form
 - **THEN** only their active wallets can be chosen
 
-### Requirement: Monthly transactions page
-The Transactions page SHALL show one month at a time, the current month by default, with links to the previous and next month (no next link beyond the current month). The page SHALL show the month's total income, total expenses and net (income minus expenses), excluding transfers. Below it, the month's transactions and transfers SHALL be listed newest day first, grouped by day; each day SHALL show its date and the net of that day's income and expenses.
-
-#### Scenario: Month summary
-- **WHEN** November has income Rp12.500.000 and expenses Rp5.847.500, plus a transfer of Rp500.000
-- **THEN** the summary shows income Rp12.500.000, expenses Rp5.847.500 and net Rp6.652.500
-
-#### Scenario: Day groups
-- **WHEN** 14 November has expenses of Rp67.500 and Rp32.000
-- **THEN** the list shows a "Saturday, 14 Nov" group with subtotal −Rp99.500 above those two rows
+### Requirement: One month at a time
+The Transactions page SHALL show one month at a time, the current month by default, with a month picker that moves to the previous and next month. It SHALL NOT move beyond the current month, and the selected month SHALL be part of the address.
 
 #### Scenario: Previous month
 - **WHEN** a user selects the previous month
 - **THEN** the summary and list show October's transactions, and the address includes the month so it can be shared or reloaded
+
+#### Scenario: No future months
+- **WHEN** the current month is selected
+- **THEN** the month picker offers no next month
+
+### Requirement: Month summary line
+Above the list, a summary line SHALL show how many entries the selected month has after filters, and the month's total income, total expenses and net (income minus expenses). Transfers SHALL be counted as entries but excluded from income, expenses and net.
+
+#### Scenario: Month summary
+- **WHEN** November has income Rp12.500.000 and expenses Rp5.847.500, plus a transfer of Rp500.000
+- **THEN** the summary shows 3 or more entries, income Rp12.500.000, expenses Rp5.847.500 and net Rp6.652.500
+
+### Requirement: Transactions table
+The month's transactions and transfers SHALL be listed newest first in a table with the columns Transaction (description and note), Category, Wallet, Date and Amount. Choosing a row SHALL open it for editing. On narrow screens the table SHALL scroll sideways instead of squeezing its columns.
+
+#### Scenario: Table rows
+- **WHEN** 14 November has expenses GoFood Rp67.500 and Grab Rp32.000
+- **THEN** both appear as rows with their category, wallet, the date "14 Nov 2026" and −Rp67.500 and −Rp32.000, above any older rows
+
+#### Scenario: Phone width
+- **WHEN** the page is shown 390 pixels wide
+- **THEN** the table keeps its columns and can be scrolled sideways, and the page itself does not scroll sideways
 
 ### Requirement: Filter and search
 On the Transactions page the user SHALL be able to filter by wallet and by category and search descriptions and notes (case-insensitive). Filters SHALL apply within the selected month, update the list and summary without reloading the page, and be reflected in the address. Filtering by category SHALL hide transfers; filtering by wallet SHALL keep transfers into or out of that wallet.
@@ -57,14 +71,35 @@ On the Transactions page the user SHALL be able to filter by wallet and by categ
 
 #### Scenario: No results
 - **WHEN** no transaction matches the filters
-- **THEN** an empty state says nothing matches and offers to clear the filters
+- **THEN** an empty state says there are no transactions here and offers to clear the filters
 
 ### Requirement: Pagination
-The list SHALL show at most 50 entries per page with links to the other pages. A day's subtotal SHALL always cover the whole day, even when the day's entries span two pages.
+The list SHALL show at most 50 entries per page with links to the other pages. The summary line SHALL always cover the whole month, not only the current page.
 
 #### Scenario: Long month
 - **WHEN** a month has 120 entries
-- **THEN** the list shows pages 1 to 3, and page 2 starts where page 1 ended
+- **THEN** the list shows pages 1 to 3, page 2 starts where page 1 ended, and the summary still counts all 120
+
+### Requirement: Export to CSV
+The Transactions page SHALL offer "Export CSV", which downloads every entry of the selected month that matches the current filters, across all pages, as a UTF-8 file named `walleto-transactions-YYYY-MM.csv` with the columns Date, Type, Description, Note, Category, Wallet and Amount.
+
+#### Scenario: Export a filtered month
+- **WHEN** a user searching "kopi" in November chooses Export CSV
+- **THEN** the file contains every November entry matching "kopi", including those beyond the first page
+
+### Requirement: CSV amounts and transfers
+In the export, expenses SHALL have negative amounts and income positive ones. A transfer SHALL appear with type "Transfer", "From → To" as both description and wallet, and an unsigned amount.
+
+#### Scenario: Signed amounts
+- **WHEN** November has a GoFood expense of Rp67.500 and a salary of Rp12.500.000
+- **THEN** the export lists them with amounts -67500 and 12500000
+
+### Requirement: Safe CSV text
+Text that a spreadsheet would read as a formula SHALL be exported so that it is shown as text.
+
+#### Scenario: Formula-looking text
+- **WHEN** a transaction's description starts with "="
+- **THEN** the exported description is prefixed so the spreadsheet shows it as text
 
 ### Requirement: Edit and delete a transaction
 A user SHALL be able to open a transaction to change any of its fields, with the same validation as adding it, and to delete it after confirming. Editing a transaction that uses an archived wallet SHALL keep that wallet available for that transaction. Toasts SHALL say "Transaction updated." and "Transaction deleted."

@@ -4,7 +4,7 @@ Implementation log for this change: what was created or modified, and where the 
 
 - **Status:** implemented, not archived yet (open: task 6.1 real-browser check)
 - **Date:** 2026-11-17
-- **Tests:** 150 passing in about 3.5 s; 60 of them new (14 balance and model, 36 activity, 10 demo)
+- **Tests:** 155 passing in about 3 s; 65 of them new (14 balance and model, 41 activity, 10 demo)
 - **Validation:** `openspec validate add-transactions --strict` passes
 
 ## Commits
@@ -15,13 +15,15 @@ Implementation log for this change: what was created or modified, and where the 
 | `a6fbdf7` | feat: add transaction and transfer models with computed wallet balances | `add-transaction-and-transfer-models.md` |
 | `f8ff966` | feat: add transactions page with add, edit and delete for transactions and transfers | `add-transactions-page.md` |
 | `9e1ba0b` | feat: add the demo account with seed_demo and a working try demo button | `add-demo-account.md` |
-| this commit | feat: complete the add-transactions change log | `add-transactions-wrap-up.md` |
+| `05a739d` | feat: complete the add-transactions change log | `add-transactions-wrap-up.md` |
+| this commit | feat: match the transactions page to the figma table and add csv export | `transactions-figma-table-and-csv.md` |
 
 ## Routes
 
 | Method | URL | Name | Purpose |
 |---|---|---|---|
-| GET | `/transactions/` | `finance:transactions` | Month page with summary, filters, day groups, pagination |
+| GET | `/transactions/` | `finance:transactions` | Month page: month picker, filters, summary line, table, pagination |
+| GET | `/transactions/export/` | `finance:transactions_export` | CSV of the filtered month (all pages) |
 | GET/POST | `/transactions/new/` | `finance:transaction_create` | Add transaction |
 | GET/POST | `/transactions/<id>/edit/` | `finance:transaction_edit` | Edit transaction |
 | GET/POST | `/transactions/<id>/delete/` | `finance:transaction_delete` | Confirm / delete |
@@ -82,6 +84,8 @@ Migration: `finance.0003_transactions_and_transfers`. Wallet balance is now `ini
 
 ## Differences from the plan
 
+- **Transactions page follows the Figma table** instead of day groups with subtotals: month picker in the heading, Export CSV in the toolbar, a one-line summary (count, income, expenses, net), columns Transaction / Category / Wallet / Date / Amount, neutral row icons, sideways scroll on phones. Font sizes stay on the docs/STYLE.md scale. The `transactions` and `transfers` spec deltas were updated (daily subtotals removed; table, summary line and CSV requirements added).
+- **CSV export added** (planned as out of scope), with formula protection for text cells.
 - **Fast password hasher in tests** was not planned. It cut the suite from about 70 s to about 3 s.
 - **Wallet card actions became icon buttons** (Edit, Archive) to fit "View activity" on phones.
 - **Category icons are darkened** (75% category color, 25% ink) because the lighter palette colors were too faint on the tile.

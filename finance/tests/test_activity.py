@@ -152,45 +152,45 @@ class TransactionsPageTests(ActivityTestCase):
             with self.subTest(month=bad):
                 self.assertEqual(self.client.get(self.url, {"month": bad}).context["month_param"], "2026-11")
 
-    def test_day_groups_with_subtotals_excluding_transfers(self):
+    def test_table_rows_with_date_column_and_transfer_row(self):
         self.tx("GoFood", 67_500)
         self.tx("Grab", 32_000, "Transport")
         self.transfer(200_000, day=date(2026, 11, 14))
         response = self.client.get(self.url)
-        day = response.context["days"][0]
-        self.assertEqual(day["date"], date(2026, 11, 14))
-        self.assertEqual(day["net"], -99_500)
-        self.assertEqual(len(day["entries"]), 3)
-        self.assertContains(response, "Saturday, 14 Nov")
+        self.assertEqual(len(response.context["entries"]), 3)
+        self.assertEqual(response.context["summary"]["expense"], 99_500)  # transfer excluded
+        self.assertContains(response, "<th scope=\"col\" class=\"px-5 py-2.5 font-medium\">Date</th>", html=False)
+        self.assertContains(response, "14 Nov 2026")
         self.assertContains(response, "BCA → GoPay")
+        self.assertContains(response, "3 transactions in November 2026")
+        self.assertContains(response, "Monthly expenses")
 
-    def test_newest_day_first(self):
+    def test_newest_first(self):
         self.tx("Older", day=date(2026, 11, 2))
         self.tx("Newer", day=date(2026, 11, 15))
-        days = self.client.get(self.url).context["days"]
-        self.assertEqual([d["date"] for d in days], [date(2026, 11, 15), date(2026, 11, 2)])
+        entries = self.client.get(self.url).context["entries"]
+        self.assertEqual([e.description for e, _ in entries], ["Newer", "Older"])
 
     def test_search_is_case_insensitive_and_covers_notes(self):
         self.tx("Kopi Kenangan")
         self.tx("Fore", note="kopi susu")
         self.tx("Indomaret", category="Shopping")
         response = self.client.get(self.url, {"q": "KOPI"})
-        names = [e.description for d in response.context["days"] for e, kind in d["entries"]]
+        names = [e.description for e, kind in response.context["entries"]]
         self.assertCountEqual(names, ["Kopi Kenangan", "Fore"])
 
     def test_wallet_filter_keeps_its_transfers(self):
         self.tx("GoFood", wallet=self.gopay)
         self.tx("Indomaret", wallet=self.bca, category="Shopping")
         self.transfer()
-        entries = [e for d in self.client.get(self.url, {"wallet": self.gopay.pk}).context["days"] for e in d["entries"]]
+        entries = self.client.get(self.url, {"wallet": self.gopay.pk}).context["entries"]
         self.assertEqual(sorted(kind for _, kind in entries), ["transaction", "transfer"])
 
     def test_category_filter_hides_transfers(self):
         self.tx("GoFood")
         self.transfer()
         response = self.client.get(self.url, {"category": cat("Food & drinks").pk})
-        kinds = [kind for d in response.context["days"] for _, kind in d["entries"]]
-        self.assertEqual(kinds, ["transaction"])
+        self.assertEqual([kind for _, kind in response.context["entries"]], ["transaction"])
 
     def test_filters_ignore_other_users_ids(self):
         other = make_user("sari@example.com", "Sari")
@@ -203,18 +203,18 @@ class TransactionsPageTests(ActivityTestCase):
     def test_no_results_empty_state(self):
         self.tx("GoFood")
         response = self.client.get(self.url, {"q": "nothing-like-this"})
-        self.assertContains(response, "Nothing matches these filters")
+        self.assertContains(response, "No transactions here yet.")
         self.assertContains(response, "Clear filters")
 
-    def test_pagination_keeps_full_day_subtotal(self):
+    def test_pagination(self):
         for i in range(60):
             self.tx(f"Item {i}", 1_000, day=date(2026, 11, 14))
         first = self.client.get(self.url)
         second = self.client.get(self.url, {"page": 2})
         self.assertEqual(first.context["page"].paginator.num_pages, 2)
-        self.assertEqual(sum(len(d["entries"]) for d in first.context["days"]), 50)
-        self.assertEqual(sum(len(d["entries"]) for d in second.context["days"]), 10)
-        self.assertEqual(second.context["days"][0]["net"], -60_000)
+        self.assertEqual(len(first.context["entries"]), 50)
+        self.assertEqual(len(second.context["entries"]), 10)
+        self.assertEqual(second.context["summary"]["expense"], 60_000)  # summary covers the whole month
         self.assertIn("page=2", first.context["page_next_url"])
 
     def test_only_own_transactions_listed(self):
@@ -228,6 +228,53 @@ class TransactionsPageTests(ActivityTestCase):
         for url in [self.url, reverse("finance:transaction_edit", args=[record.pk]), reverse("finance:transfer_create")]:
             with self.subTest(url=url):
                 self.assertEqual(self.client.get(url).context["active_section"]["key"], "transactions")
+
+
+class TransactionExportTests(ActivityTestCase):
+    export_url = reverse("finance:transactions_export")
+
+    def rows(self, **params):
+        response = self.client.get(self.export_url, params)
+        self.assertEqual(response["Content-Type"], "text/csv; charset=utf-8")
+        text = response.content.decode("utf-8-sig")
+        import csv, io
+        return response, list(csv.reader(io.StringIO(text)))
+
+    def test_exports_month_with_signed_amounts_and_transfers(self):
+        self.tx("GoFood", 67_500)
+        self.tx("Salary", 12_500_000, "Salary", self.bca, date(2026, 11, 1))
+        self.transfer(200_000)
+        self.tx("October", 999, day=date(2026, 10, 31))
+        response, rows = self.rows(month="2026-11")
+        self.assertIn('filename="walleto-transactions-2026-11.csv"', response["Content-Disposition"])
+        self.assertEqual(rows[0], ["Date", "Type", "Description", "Note", "Category", "Wallet", "Amount"])
+        self.assertEqual(rows[1], ["2026-11-14", "Expense", "GoFood", "", "Food & drinks", "GoPay", "-67500"])
+        self.assertEqual(rows[2], ["2026-11-12", "Transfer", "BCA → GoPay", "", "", "BCA → GoPay", "200000"])
+        self.assertEqual(rows[3], ["2026-11-01", "Income", "Salary", "", "Salary", "BCA", "12500000"])
+        self.assertEqual(len(rows), 4)
+
+    def test_export_follows_filters_and_has_all_pages(self):
+        for i in range(60):
+            self.tx(f"Kopi {i}", 1_000)
+        self.tx("Grab", 32_000, "Transport")
+        _, rows = self.rows(q="kopi")
+        self.assertEqual(len(rows), 61)
+
+    def test_export_neutralises_formulas(self):
+        self.tx("=HYPERLINK(\"http://evil\")")
+        _, rows = self.rows()
+        self.assertEqual(rows[1][2], "'=HYPERLINK(\"http://evil\")")
+
+    def test_export_only_own_rows(self):
+        other = make_user("sari@example.com", "Sari")
+        theirs = Wallet.objects.create(user=other, name="Mandiri")
+        Transaction.objects.create(user=other, wallet=theirs, category=cat("Others"), amount=1, date=date(2026, 11, 10), description="Secret")
+        _, rows = self.rows()
+        self.assertNotIn("Secret", str(rows))
+
+    def test_page_links_export_with_current_filters(self):
+        response = self.client.get(self.url, {"q": "kopi", "month": "2026-11"})
+        self.assertIn("/transactions/export/?month=2026-11&amp;q=kopi", response.content.decode())
 
 
 class TransactionCrudTests(ActivityTestCase):
