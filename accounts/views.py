@@ -3,6 +3,11 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_not_required
 from django.contrib.auth.views import LoginView
 from django.shortcuts import redirect, render
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+
+from finance.demo import build_demo, get_demo_user
+from finance.models import Wallet
 
 from .forms import EmailAuthenticationForm, RegistrationForm
 
@@ -34,3 +39,15 @@ def register(request):
         form = RegistrationForm()
 
     return render(request, "accounts/register.html", {"form": form})
+
+
+@login_not_required
+@require_POST
+def demo_sign_in(request):
+    """Sign in as the shared demo user (demo-account spec). POST only."""
+    user = get_demo_user()
+    if not Wallet.objects.for_user(user).exists():
+        user = build_demo(timezone.localdate())
+    login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+    messages.info(request, "You're using the demo account.")
+    return redirect("core:dashboard")

@@ -3,7 +3,7 @@
 **Created:** 2026-11-17
 **Last edited:** 2026-11-17
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `f8ff966` feat: add transactions page with add, edit and delete for transactions and transfers
 **Branch:** `main`, parent `a6fbdf7`
 **OpenSpec change:** `add-transactions` (MVP 2), tasks 2.1–2.3, 3.1–3.7, 4.1–4.5
 **Trigger:** specs `transactions`, `transfers` and the `wallets` delta.

@@ -20,7 +20,8 @@ One Markdown record per commit, describing what the commit built, why, which fil
 | 12 | `8e2ebf5` | [archive-add-wallets.md](archive-add-wallets.md) | 1 |
 | 13 | `e9d43b7` | [add-transactions-proposal.md](add-transactions-proposal.md) | 2 |
 | 14 | `a6fbdf7` | [add-transaction-and-transfer-models.md](add-transaction-and-transfer-models.md) | 2 |
-| 15 | this commit | [add-transactions-page.md](add-transactions-page.md) | 2 |
+| 15 | `f8ff966` | [add-transactions-page.md](add-transactions-page.md) | 2 |
+| 16 | this commit | [add-demo-account.md](add-demo-account.md) | 2 |
 
 Commits made before MVP 0's code (`git init`, `.gitignore`, OpenSpec init) have no record.
 
