@@ -3,7 +3,7 @@
 **Created:** 2026-11-16
 **Last edited:** 2026-11-16
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `8e2ebf5` feat: archive the add-wallets change
 **Branch:** `main`, parent `bdb1803`
 **OpenSpec change:** `add-wallets` (MVP 1), closing
 **Trigger:** MVP 1 accepted and archived by the developer with `openspec archive add-wallets`.
