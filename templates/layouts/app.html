@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% load icons %}
+
+{% block body %}
+<div x-data="shell" :class="collapsed && 'is-collapsed'" class="app-shell min-h-screen">
+
+  {# ---------- Sidebar (768px and up) ---------- #}
+  <aside class="sidebar fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-border bg-sidebar pt-8 md:flex">
+    <a href="{% url 'core:dashboard' %}" class="sidebar-brand mb-10 flex items-center gap-2.5 px-3">
+      <span class="grid size-8 shrink-0 place-items-center rounded-panel bg-forest text-white">{% icon "wallet" size=18 %}</span>
+      <span class="sidebar-label text-[26px] font-extrabold leading-none tracking-[-1.5px]">walleto<span class="text-forest">.</span></span>
+    </a>
+
+    <nav class="flex flex-col gap-1.5" aria-label="Main">
+      {% for section in nav_sections %}
+        <a href="{% url section.url_name %}" title="{{ section.title }}"
+           class="nav-item {% if active_section.key == section.key %}is-active{% endif %}"
+           {% if active_section.key == section.key %}aria-current="page"{% endif %}>
+          {% icon section.icon size=19 %}
+          <span class="sidebar-label">{{ section.title }}</span>
+        </a>
+      {% endfor %}
+    </nav>
+
+    <div class="relative mt-auto" x-data="{ open: false }" @keydown.escape="open = false" @click.outside="open = false">
+      <div x-show="open" x-cloak x-transition.opacity class="popover bottom-full left-0 mb-2 w-[220px]">
+        {% include "components/profile_menu.html" %}
+      </div>
+      <button type="button" @click="open = !open" :aria-expanded="open" aria-label="Account menu"
+              class="sidebar-profile flex w-full items-center gap-2.5 border-t border-border py-5 text-left">
+        <span class="avatar">{{ user.initials }}</span>
+        <span class="sidebar-label flex min-w-0 flex-1 flex-col">
+          <strong class="truncate text-control font-semibold">{{ user.full_name }}</strong>
+          <small class="truncate text-caption text-muted">{{ user.email }}</small>
+        </span>
+        <span class="sidebar-label text-muted">{% icon "chevron-down" size=15 %}</span>
+      </button>
+    </div>
+  </aside>
+
+  {# ---------- Workspace ---------- #}
+  <div class="workspace">
+    <header class="flex h-16 items-center justify-between gap-4 border-b border-border bg-[#fdfdfa] px-4 md:px-9">
+      <div class="flex min-w-0 items-center gap-4">
+        <button type="button" class="btn-icon -ml-1.5 hidden md:inline-flex" @click="toggle()"
+                :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'" aria-label="Collapse sidebar">
+          {% icon "collapse" size=18 %}
+        </button>
+        <a href="{% url 'core:dashboard' %}" class="flex items-center gap-2 md:hidden">
+          <span class="grid size-7 place-items-center rounded-control bg-forest text-white">{% icon "wallet" size=16 %}</span>
+          <span class="text-[20px] font-extrabold tracking-[-1px]">walleto<span class="text-forest">.</span></span>
+        </a>
+        <span class="hidden h-4 w-px bg-border md:block"></span>
+        <nav class="hidden items-center gap-3 text-control text-muted md:flex" aria-label="Breadcrumb">
+          <span>My workspace</span>
+          {% icon "chevron-right" size=12 %}
+          <span class="text-ink">{% block breadcrumb %}{% if active_section %}{{ active_section.title }}{% else %}{{ page_title }}{% endif %}{% endblock %}</span>
+        </nav>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="hidden text-control text-muted sm:inline">{{ today|date:"l, j M Y" }}</span>
+        <div class="relative md:hidden" x-data="{ open: false }" @keydown.escape="open = false" @click.outside="open = false">
+          <button type="button" @click="open = !open" :aria-expanded="open" aria-label="Account menu">
+            <span class="avatar">{{ user.initials }}</span>
+          </button>
+          <div x-show="open" x-cloak x-transition.opacity class="popover top-full right-0 mt-2 w-[220px]">
+            {% include "components/profile_menu.html" %}
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-[1272px] px-4 pt-7 pb-28 md:px-10 md:pt-9 md:pb-16">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  {# ---------- Bottom navigation (below 768px) ---------- #}
+  <nav class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] md:hidden" aria-label="Main (mobile)">
+    {% for section in nav_sections %}
+      <a href="{% url section.url_name %}"
+         class="flex min-w-0 flex-col items-center gap-1 py-2.5 text-[11px] font-medium {% if active_section.key == section.key %}text-forest{% else %}text-muted{% endif %}"
+         {% if active_section.key == section.key %}aria-current="page"{% endif %}>
+        {% icon section.icon size=20 %}
+        <span class="max-w-full truncate px-0.5">{{ section.short }}</span>
+      </a>
+    {% endfor %}
+  </nav>
+</div>
+{% endblock %}

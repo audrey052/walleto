@@ -1,0 +1,123 @@
+{% extends "layouts/app.html" %}
+{% load icons money %}
+
+{% block title %}Style guide{% endblock %}
+
+{% block content %}
+  {% include "components/page_heading.html" with title="Style guide" subtitle="Every shared component, as defined in docs/STYLE.md. Visible in development only." %}
+
+  <div class="flex flex-col gap-6">
+
+    {# Colors #}
+    <section class="panel">
+      <div class="panel-header"><h2>Color</h2></div>
+      <div class="panel-body grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+        <div><div class="h-12 rounded-control border border-border bg-paper"></div><p class="mt-2 text-caption">paper</p></div>
+        <div><div class="h-12 rounded-control border border-border bg-sidebar"></div><p class="mt-2 text-caption">sidebar</p></div>
+        <div><div class="h-12 rounded-control border border-border bg-surface"></div><p class="mt-2 text-caption">surface</p></div>
+        <div><div class="h-12 rounded-control border border-border bg-border"></div><p class="mt-2 text-caption">border</p></div>
+        <div><div class="h-12 rounded-control bg-ink"></div><p class="mt-2 text-caption">ink</p></div>
+        <div><div class="h-12 rounded-control bg-secondary"></div><p class="mt-2 text-caption">secondary</p></div>
+        <div><div class="h-12 rounded-control bg-muted"></div><p class="mt-2 text-caption">muted</p></div>
+        <div><div class="h-12 rounded-control bg-forest"></div><p class="mt-2 text-caption">forest</p></div>
+        <div><div class="h-12 rounded-control bg-forest-soft"></div><p class="mt-2 text-caption">forest-soft</p></div>
+        <div><div class="h-12 rounded-control bg-forest-tint"></div><p class="mt-2 text-caption">forest-tint</p></div>
+        <div><div class="h-12 rounded-control bg-amber"></div><p class="mt-2 text-caption">amber</p></div>
+        <div><div class="h-12 rounded-control bg-clay"></div><p class="mt-2 text-caption">clay</p></div>
+        <div><div class="h-12 rounded-control bg-chart-1"></div><p class="mt-2 text-caption">chart-1</p></div>
+        <div><div class="h-12 rounded-control bg-chart-2"></div><p class="mt-2 text-caption">chart-2</p></div>
+        <div><div class="h-12 rounded-control bg-chart-3"></div><p class="mt-2 text-caption">chart-3</p></div>
+        <div><div class="h-12 rounded-control bg-chart-4"></div><p class="mt-2 text-caption">chart-4</p></div>
+      </div>
+    </section>
+
+    {# Typography #}
+    <section class="panel">
+      <div class="panel-header"><h2>Typography</h2></div>
+      <div class="panel-body flex flex-col gap-5">
+        <div><p class="eyebrow mb-1">Display / 40</p>{% amount 2152500 css_class="amount-display" %}</div>
+        <div><p class="eyebrow mb-1">Title / 28</p><p class="text-title font-semibold tracking-[-1px]">A clearer picture of your money.</p></div>
+        <div><p class="eyebrow mb-1">Modal title / 18</p><p class="text-modal font-semibold">Edit budget</p></div>
+        <div><p class="eyebrow mb-1">Section / 15</p><h2>Spending by category</h2></div>
+        <div><p class="eyebrow mb-1">Body / 14</p><p>Every income and expense, by date.</p></div>
+        <div><p class="eyebrow mb-1">Control / 13</p><p class="text-control font-medium">Add transaction</p></div>
+        <div><p class="eyebrow mb-1">Caption / 12</p><p class="text-caption text-muted">14 Nov 2026 · Lunch</p></div>
+        <div><p class="eyebrow mb-1">Overline / 11</p><p class="eyebrow">Spent so far</p></div>
+      </div>
+    </section>
+
+    {# Money #}
+    <section class="panel">
+      <div class="panel-header"><h2>Money format</h2></div>
+      <div class="panel-body grid gap-3 sm:grid-cols-2">
+        {% for value in sample_amounts %}
+          <div class="flex justify-between border-b border-border pb-2 text-control"><span class="text-muted">{{ value }}</span>{% amount value %}</div>
+        {% endfor %}
+        <div class="flex justify-between border-b border-border pb-2 text-control"><span class="text-muted">expense 67500</span>{% amount 67500 kind="expense" %}</div>
+        <div class="flex justify-between border-b border-border pb-2 text-control"><span class="text-muted">income 12500000</span>{% amount 12500000 kind="income" %}</div>
+      </div>
+    </section>
+
+    {# Buttons and inputs #}
+    <section class="panel">
+      <div class="panel-header"><h2>Actions &amp; inputs</h2></div>
+      <div class="panel-body flex flex-col gap-6">
+        <div class="flex flex-wrap items-center gap-3">
+          <button class="btn btn-primary">{% icon "plus" size=16 %} Add transaction</button>
+          <button class="btn">{% icon "check" size=16 %} Save changes</button>
+          <button class="btn btn-danger">Delete</button>
+          <a href="#" class="btn-text">View details {% icon "arrow-right" size=15 %}</a>
+          <button class="btn-icon" aria-label="Search">{% icon "search" %}</button>
+          <button class="btn" disabled>Disabled</button>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-3">
+          <div class="field"><label class="field-label" for="sg-name">Transaction name</label><input id="sg-name" class="input" placeholder="e.g. Lunch at Warung Pagi Sore"></div>
+          <div class="field"><label class="field-label" for="sg-wallet">Wallet</label><select id="sg-wallet" class="input"><option>BCA</option><option>GoPay</option><option>Cash</option></select></div>
+          <div class="field field-invalid"><label class="field-label" for="sg-amount">Amount</label><input id="sg-amount" class="input" value="0"><p class="field-error">Amount must be greater than 0.</p></div>
+        </div>
+      </div>
+    </section>
+
+    {# Data and feedback #}
+    <section class="panel">
+      <div class="panel-header"><h2>Data &amp; feedback</h2></div>
+      <div class="panel-body flex flex-col gap-6">
+        <div class="flex flex-wrap gap-2">
+          {% for c in categories %}{% include "components/category_chip.html" with name=c.name color=c.color %}{% endfor %}
+        </div>
+        <div class="flex items-center gap-3 rounded-panel border border-border p-3">
+          <span class="icon-tile">{% icon "food" size=18 %}</span>
+          <div class="min-w-0 flex-1"><p class="text-control font-semibold">GoFood</p><p class="text-caption text-muted">14 Nov 2026 · Lunch</p></div>
+          {% include "components/category_chip.html" with name="Food & drinks" color="#1F5C4A" %}
+          <span class="text-control font-medium">{% amount 67500 kind="expense" %}</span>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-3">
+          <div><p class="mb-2 text-caption text-muted">Normal · 68%</p>{% include "components/progress.html" with percent=68 %}</div>
+          <div><p class="mb-2 text-caption text-muted">Warning · 94%</p>{% include "components/progress.html" with percent=94 %}</div>
+          <div><p class="mb-2 text-caption text-muted">Over · 112%</p>{% include "components/progress.html" with percent=112 %}</div>
+        </div>
+        <div class="flex items-center gap-2 text-caption text-secondary"><span class="status-dot"></span> On track <span class="status-dot status-dot-red ml-4"></span> Over budget</div>
+        <div class="toast"><span class="toast-icon">{% icon "check" size=15 %}</span><p class="flex-1 pt-0.5 text-control">Transaction added.</p></div>
+        <div>
+          <button type="button" class="btn" onclick="document.getElementById('sg-modal').showModal()">Open modal</button>
+          {% include "components/modal.html" with id="sg-modal" title="Edit budget" description="Set a monthly limit for this category." body="core/_styleguide_modal_body.html" submit_label="Save" %}
+        </div>
+      </div>
+    </section>
+
+    {# Empty state #}
+    <section class="panel">
+      {% include "components/empty_state.html" with icon="transactions" title="No transactions yet" text="Add your first transaction to see where your money goes." action_label="Add transaction" %}
+    </section>
+
+    {# Icons #}
+    <section class="panel">
+      <div class="panel-header"><h2>Icons</h2></div>
+      <div class="panel-body grid grid-cols-4 gap-4 sm:grid-cols-8">
+        {% for name in icons %}
+          <div class="flex flex-col items-center gap-2 text-secondary">{% icon name %}<span class="text-caption">{{ name }}</span></div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+{% endblock %}

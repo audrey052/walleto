@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load icons money %}
+
+{% block body %}
+<div class="grid min-h-screen lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+  {# ---------- Form side ---------- #}
+  <div class="flex flex-col px-6 py-8 sm:px-12">
+    <a href="{% url 'accounts:login' %}" class="flex items-center gap-2.5">
+      <span class="grid size-8 place-items-center rounded-panel bg-forest text-white">{% icon "wallet" size=18 %}</span>
+      <span class="text-[26px] font-extrabold leading-none tracking-[-1.5px]">walleto<span class="text-forest">.</span></span>
+    </a>
+    <div class="mx-auto flex w-full max-w-[380px] flex-1 flex-col justify-center py-12">
+      {% block form %}{% endblock %}
+    </div>
+    <p class="text-caption text-muted">Personal finance for everyday life.</p>
+  </div>
+
+  {# ---------- Preview side (a calm, static glimpse of the dashboard) ---------- #}
+  <div class="hidden items-center justify-center border-l border-border bg-sidebar p-12 lg:flex" aria-hidden="true">
+    <div class="w-full max-w-[460px]">
+      <div class="panel p-7">
+        <p class="eyebrow">Remaining this month</p>
+        <p class="mt-2">{% amount 2152500 css_class="amount-display" %}</p>
+        <p class="mt-1 flex items-center gap-2 text-caption text-secondary">
+          <span class="status-dot"></span> Enough for about 12 days at your current pace
+        </p>
+        <div class="mt-6 flex flex-col gap-4 border-t border-border pt-6">
+          <div>
+            <div class="mb-2 flex justify-between text-control"><span>Food &amp; drinks</span><span class="text-secondary">{{ 2147500|rupiah }} of {{ 2800000|rupiah }}</span></div>
+            {% include "components/progress.html" with percent=77 %}
+          </div>
+          <div>
+            <div class="mb-2 flex justify-between text-control"><span>Shopping</span><span class="text-secondary">{{ 1389500|rupiah }} of {{ 1600000|rupiah }}</span></div>
+            {% include "components/progress.html" with percent=87 %}
+          </div>
+          <div>
+            <div class="mb-2 flex justify-between text-control"><span>Transport</span><span class="text-secondary">{{ 1048500|rupiah }} of {{ 1600000|rupiah }}</span></div>
+            {% include "components/progress.html" with percent=66 %}
+          </div>
+        </div>
+      </div>
+      <div class="panel mt-4 flex items-center gap-3 p-4">
+        <span class="icon-tile">{% icon "food" size=18 %}</span>
+        <div class="min-w-0 flex-1">
+          <p class="text-control font-semibold">GoFood</p>
+          <p class="text-caption text-muted">14 Nov 2026 · Lunch</p>
+        </div>
+        {% include "components/category_chip.html" with name="Food & drinks" color="#1F5C4A" %}
+        <span class="text-control font-medium">{% amount 67500 kind="expense" %}</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

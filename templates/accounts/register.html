@@ -1,0 +1,21 @@
+{% extends "layouts/auth.html" %}
+
+{% block title %}Create an account{% endblock %}
+
+{% block form %}
+  <h1>Create an account</h1>
+  <p class="mt-2 text-body text-secondary">Track your wallets, budgets and savings in one place.</p>
+
+  <form method="post" class="mt-8 flex flex-col gap-5" novalidate>
+    {% csrf_token %}
+    {% include "components/field.html" with field=form.full_name %}
+    {% include "components/field.html" with field=form.email %}
+    {% include "components/field.html" with field=form.password1 %}
+    {% include "components/field.html" with field=form.password2 %}
+    <button type="submit" class="btn btn-primary mt-1 h-10 w-full">Create account</button>
+  </form>
+
+  <p class="mt-8 text-center text-control text-secondary">
+    Already have an account? <a href="{% url 'accounts:login' %}" class="btn-text">Sign in</a>
+  </p>
+{% endblock %}

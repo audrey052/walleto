@@ -1,0 +1,10 @@
+{# Usage: {% include "components/field.html" with field=form.email %} #}
+<div class="field {% if field.errors %}field-invalid{% endif %}">
+  <label class="field-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+  {{ field }}
+  {% for error in field.errors %}
+    <p class="field-error" id="{{ field.auto_id }}_error">{{ error }}</p>
+  {% empty %}
+    {% if field.help_text %}<p class="field-help">{{ field.help_text|safe }}</p>{% endif %}
+  {% endfor %}
+</div>

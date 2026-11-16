@@ -1,0 +1,13 @@
+{% load icons %}
+{% if messages %}
+<div class="pointer-events-none fixed right-4 bottom-24 z-50 flex flex-col gap-2 md:right-6 md:bottom-6" aria-live="polite">
+  {% for message in messages %}
+    <div x-data="toast" x-show="visible" x-transition.opacity.duration.200ms
+         class="toast pointer-events-auto {% if message.level_tag == 'error' %}toast-error{% endif %}" role="status">
+      <span class="toast-icon">{% if message.level_tag == 'error' %}{% icon "info" size=15 %}{% else %}{% icon "check" size=15 %}{% endif %}</span>
+      <p class="flex-1 pt-0.5 text-control text-ink">{{ message }}</p>
+      <button type="button" class="btn-icon -my-1.5 size-7" @click="visible = false" aria-label="Dismiss">{% icon "close" size=15 %}</button>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}

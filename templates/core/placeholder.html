@@ -1,0 +1,10 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}{{ section.title }}{% endblock %}
+
+{% block content %}
+  {% include "components/page_heading.html" with title=section.title subtitle=section.subtitle %}
+  <section class="panel">
+    {% include "components/empty_state.html" with icon=section.icon title="Coming soon" text="This section is being built. It will appear here in a later update." %}
+  </section>
+{% endblock %}

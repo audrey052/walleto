@@ -1,0 +1,10 @@
+{% load icons %}
+{# Usage: {% include "components/empty_state.html" with icon="transactions" title="..." text="..." action_label="..." action_url="..." %} #}
+<div class="empty-state">
+  <span class="empty-state-icon">{% icon icon|default:"info" size=24 %}</span>
+  <h2>{{ title }}</h2>
+  {% if text %}<p class="mt-2 max-w-sm text-body text-secondary">{{ text }}</p>{% endif %}
+  {% if action_label %}
+    <a href="{{ action_url|default:'#' }}" class="btn mt-6">{% icon "plus" size=16 %} {{ action_label }}</a>
+  {% endif %}
+</div>

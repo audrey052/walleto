@@ -1,0 +1,11 @@
+{% load icons %}
+<div class="mb-3 border-b border-border pb-3">
+  <strong class="block truncate text-control font-semibold">{{ user.full_name }}</strong>
+  <span class="block truncate text-caption text-muted">{{ user.email }}</span>
+</div>
+<form method="post" action="{% url 'accounts:logout' %}">
+  {% csrf_token %}
+  <button type="submit" class="flex w-full items-center gap-2.5 rounded-control px-2 py-2 text-control font-medium text-secondary hover:bg-hover hover:text-ink">
+    {% icon "logout" size=16 %} Sign out
+  </button>
+</form>
