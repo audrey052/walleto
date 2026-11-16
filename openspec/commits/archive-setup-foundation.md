@@ -3,7 +3,7 @@
 **Created:** 2026-11-16
 **Last edited:** 2026-11-16
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `28d1f2f` feat: archive the setup-foundation change
 **Branch:** `main`, parent `3f2dae8`
 **OpenSpec change:** `setup-foundation` (MVP 0), closing
 **Trigger:** MVP 0 accepted by the developer after the superuser sign-in (task 2.4) and the real-browser check (task 10.1).

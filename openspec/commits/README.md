@@ -12,7 +12,8 @@ One Markdown record per commit, describing what the commit built, why, which fil
 | 4 | `5b725ca` | [setup-foundation-spec-and-readme.md](setup-foundation-spec-and-readme.md) | 0 |
 | 5 | `437f30d` | [setup-foundation-implementation-log.md](setup-foundation-implementation-log.md) | 0 |
 | 6 | `3f2dae8` | [per-commit-records.md](per-commit-records.md) | 0 |
-| 7 | this commit | [archive-setup-foundation.md](archive-setup-foundation.md) | 0 |
+| 7 | `28d1f2f` | [archive-setup-foundation.md](archive-setup-foundation.md) | 0 |
+| 8 | this commit | [add-wallets-proposal.md](add-wallets-proposal.md) | 1 |
 
 Commits made before MVP 0's code (`git init`, `.gitignore`, OpenSpec init) have no record.
 
