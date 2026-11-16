@@ -10,6 +10,7 @@ context: |
   - Every query on user data is scoped to the logged-in user. A user must never be able to read or change another user's data, including by guessing IDs in URLs.
   - Keep tasks small and concrete enough to implement without further breakdown.
   - After a change is implemented, add a `changes.md` next to its proposal: commits, routes, every file created or modified with what it does, differences from the plan, verification done, and open items before archiving.
+  - Every commit adds one record in `openspec/commits/` (in the same commit), following the template and rules in `openspec/commits/README.md`, and updates the index there.
 
 rules:
   proposal:
