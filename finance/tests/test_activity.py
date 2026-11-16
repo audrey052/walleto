@@ -163,7 +163,9 @@ class TransactionsPageTests(ActivityTestCase):
         self.assertContains(response, "14 Nov 2026")
         self.assertContains(response, "BCA → GoPay")
         self.assertContains(response, "3 transactions in November 2026")
-        self.assertContains(response, "Monthly expenses")
+        self.assertContains(response, "Expenses")
+        self.assertNotContains(response, "Monthly expenses")
+        self.assertNotContains(response, ">Net")
 
     def test_newest_first(self):
         self.tx("Older", day=date(2026, 11, 2))

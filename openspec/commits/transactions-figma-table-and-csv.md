@@ -3,7 +3,7 @@
 **Created:** 2026-11-17
 **Last edited:** 2026-11-17
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `90c528b` feat: match the transactions page to the figma table and add csv export
 **Branch:** `main`, parent `05a739d`
 **OpenSpec change:** `add-transactions` (MVP 2), tasks 3.5, 3.7–3.9
 **Trigger:** the developer asked for the Transactions UI to look like the Figma Make design, keeping the font sizes already used in the app.

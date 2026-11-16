@@ -41,11 +41,11 @@ The Transactions page SHALL show one month at a time, the current month by defau
 - **THEN** the month picker offers no next month
 
 ### Requirement: Month summary line
-Above the list, a summary line SHALL show how many entries the selected month has after filters, and the month's total income, total expenses and net (income minus expenses). Transfers SHALL be counted as entries but excluded from income, expenses and net.
+Above the list, a summary line SHALL show how many entries the selected month has after filters, and the month's total income and total expenses, labelled "Income" and "Expenses". Transfers SHALL be counted as entries but excluded from income and expenses.
 
 #### Scenario: Month summary
 - **WHEN** November has income Rp12.500.000 and expenses Rp5.847.500, plus a transfer of Rp500.000
-- **THEN** the summary shows 3 or more entries, income Rp12.500.000, expenses Rp5.847.500 and net Rp6.652.500
+- **THEN** the summary shows 3 or more entries, Income +Rp12.500.000 and Expenses Rp5.847.500
 
 ### Requirement: Transactions table
 The month's transactions and transfers SHALL be listed newest first in a table with the columns Transaction (description and note), Category, Wallet, Date and Amount. Choosing a row SHALL open it for editing. On narrow screens the table SHALL scroll sideways instead of squeezing its columns.

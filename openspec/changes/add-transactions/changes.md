@@ -16,7 +16,8 @@ Implementation log for this change: what was created or modified, and where the 
 | `f8ff966` | feat: add transactions page with add, edit and delete for transactions and transfers | `add-transactions-page.md` |
 | `9e1ba0b` | feat: add the demo account with seed_demo and a working try demo button | `add-demo-account.md` |
 | `05a739d` | feat: complete the add-transactions change log | `add-transactions-wrap-up.md` |
-| this commit | feat: match the transactions page to the figma table and add csv export | `transactions-figma-table-and-csv.md` |
+| `90c528b` | feat: match the transactions page to the figma table and add csv export | `transactions-figma-table-and-csv.md` |
+| this commit | fix: show only income and expenses in the transactions summary | `transactions-summary-income-expenses.md` |
 
 ## Routes
 
@@ -84,7 +85,7 @@ Migration: `finance.0003_transactions_and_transfers`. Wallet balance is now `ini
 
 ## Differences from the plan
 
-- **Transactions page follows the Figma table** instead of day groups with subtotals: month picker in the heading, Export CSV in the toolbar, a one-line summary (count, income, expenses, net), columns Transaction / Category / Wallet / Date / Amount, neutral row icons, sideways scroll on phones. Font sizes stay on the docs/STYLE.md scale. The `transactions` and `transfers` spec deltas were updated (daily subtotals removed; table, summary line and CSV requirements added).
+- **Transactions page follows the Figma table** instead of day groups with subtotals: month picker in the heading, Export CSV in the toolbar, a one-line summary (count, Income, Expenses; net and the word "Monthly" removed at the developer's request), columns Transaction / Category / Wallet / Date / Amount, neutral row icons, sideways scroll on phones. Font sizes stay on the docs/STYLE.md scale. The `transactions` and `transfers` spec deltas were updated (daily subtotals removed; table, summary line and CSV requirements added).
 - **CSV export added** (planned as out of scope), with formula protection for text cells.
 - **Fast password hasher in tests** was not planned. It cut the suite from about 70 s to about 3 s.
 - **Wallet card actions became icon buttons** (Edit, Archive) to fit "View activity" on phones.
