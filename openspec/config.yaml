@@ -8,7 +8,8 @@ context: |
   - Money is Indonesian Rupiah with no decimals. Store amounts as integers or Decimal, never float. Display format is defined in docs/STYLE.md (e.g. Rp847.500).
   - Numbers are always computed by code or the database, never by an LLM. An LLM may only interpret user intent, choose tools, and explain results that code has computed. Any LLM output that changes data must be validated by code and confirmed by the user before it is saved.
   - Every query on user data is scoped to the logged-in user. A user must never be able to read or change another user's data, including by guessing IDs in URLs.
-  - The developer writes the code by hand to learn; an AI assistant explains and reviews. Keep tasks small and concrete enough to implement without further breakdown.
+  - Keep tasks small and concrete enough to implement without further breakdown.
+  - After a change is implemented, add a `changes.md` next to its proposal: commits, routes, every file created or modified with what it does, differences from the plan, verification done, and open items before archiving.
 
 rules:
   proposal:
