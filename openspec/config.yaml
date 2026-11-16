@@ -1,32 +1,23 @@
 schema: spec-driven
 
-# Project context (optional)
-# Add only constraints that should guide OpenSpec artifacts and workflows.
-# Include constraints an agent cannot infer by reading the code.
-# Keep general project documentation and discoverable codebase facts out.
-# Example:
-#   context: |
-#     Designs and tasks must cover Windows, macOS, and Linux
-#     Write all artifacts in Spanish
+context: |
+  - Write all OpenSpec artifacts (proposal, specs, design, tasks) in English.
+  - Walleto is a personal finance web app built as a portfolio project. One OpenSpec change per MVP, in the order listed in WORKPLAN.md.
+  - Stack: Django 5.2 LTS with server-rendered templates, Tailwind CSS v4, HTMX and Alpine.js for interactivity, ApexCharts for charts. SQLite in development, PostgreSQL in production. OpenAI API for AI features. No separate JavaScript frontend framework.
+  - UI copy is English only. Light mode only; never add dark mode. All UI must follow docs/STYLE.md (tokens, components, copy rules).
+  - Money is Indonesian Rupiah with no decimals. Store amounts as integers or Decimal, never float. Display format is defined in docs/STYLE.md (e.g. Rp847.500).
+  - Numbers are always computed by code or the database, never by an LLM. An LLM may only interpret user intent, choose tools, and explain results that code has computed. Any LLM output that changes data must be validated by code and confirmed by the user before it is saved.
+  - Every query on user data is scoped to the logged-in user. A user must never be able to read or change another user's data, including by guessing IDs in URLs.
+  - The developer writes the code by hand to learn; an AI assistant explains and reviews. Keep tasks small and concrete enough to implement without further breakdown.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always state what is out of scope
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
-
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+rules:
+  proposal:
+    - State what is out of scope for this MVP.
+  specs:
+    - Describe observable behavior only; library and framework choices belong in design.md.
+  design:
+    - Record decisions with the alternative that was rejected and why.
+  tasks:
+    - Each task should take at most about two hours.
+    - Every change includes tasks for automated tests of its core logic, including a test that one user cannot access another user's data when the change adds user data.
+    - Every change ends with a task to update docs/decisions.md and to run openspec validate.
