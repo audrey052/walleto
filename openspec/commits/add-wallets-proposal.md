@@ -3,7 +3,7 @@
 **Created:** 2026-11-16
 **Last edited:** 2026-11-16
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `5c5521c` feat: plan the add-wallets change for wallets and categories
 **Branch:** `main`, parent `28d1f2f`
 **OpenSpec change:** `add-wallets` (MVP 1), planning
 **Trigger:** WORKPLAN MVP 1 (Wallets + categories), started after MVP 0 was archived.

@@ -50,6 +50,23 @@ PATHS = {
     "info": '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/>',
     "send": '<path d="m21 3-7 18-4-7-7-4 18-7ZM10 14l5-5"/>',
     "logout": '<path d="M9 3H4v18h5m5-14 5 5-5 5M9 12h11"/>',
+    # Added for the default categories (MVP 1), drawn in the same 24px / 1.5px style.
+    "heart": '<path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20Z"/>',
+    "ticket": (
+        '<path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4Z"/>'
+        '<path d="M14 6v2m0 3v2m0 3v2"/>'
+    ),
+    "briefcase": (
+        '<rect x="3" y="7" width="18" height="13" rx="2"/>'
+        '<path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/>'
+    ),
+    "gift": (
+        '<rect x="3" y="8" width="18" height="4" rx="1"/>'
+        '<path d="M5 12v9h14v-9M12 8v13M12 8S10.5 3.5 8 4.5 8.5 8 12 8Zm0 0s1.5-4.5 4-3.5S15.5 8 12 8Z"/>'
+    ),
+    "archive": '<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v11h14V9M10 13h4"/>',
+    "edit": '<path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4"/>',
+    "restore": '<path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4"/>',
 }
 
 
