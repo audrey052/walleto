@@ -42,7 +42,7 @@
 
 ## 6. Wrap-up
 
-- [ ] 6.1 Check the Wallets page at 1440px and 390px against docs/STYLE.md and the Figma design (headless screenshots done; developer to do a real-browser pass)
+- [x] 6.1 Check the Wallets page at 1440px and 390px against docs/STYLE.md and the Figma design (headless screenshots, then the developer's real-browser pass before archiving)
 - [x] 6.2 Write `changes.md` and a record per commit in `openspec/commits/`
 - [x] 6.3 Update docs/decisions.md
 - [x] 6.4 Run `openspec validate add-wallets --strict`

@@ -3,7 +3,7 @@
 **Created:** 2026-11-16
 **Last edited:** 2026-11-16
 **Status:** Implemented, with the real-browser check (task 6.1) outstanding
-**Commit:** this commit
+**Commit:** `bdb1803` feat: complete the add-wallets change log
 **Branch:** `main`, parent `605f480`
 **OpenSpec change:** `add-wallets` (MVP 1), tasks 6.2–6.4
 **Trigger:** `openspec/config.yaml` asks for a `changes.md` after a change is implemented.

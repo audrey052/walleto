@@ -2,7 +2,7 @@
 
 Implementation log for this change: what was created or modified, and where the result differs from `proposal.md`, `design.md` and `tasks.md`. Per-commit detail is in `openspec/commits/`.
 
-- **Status:** implemented, not archived yet (open: task 6.1 real-browser check)
+- **Status:** implemented and archived (all tasks done)
 - **Date:** 2026-11-16
 - **Tests:** 90 passing in the whole suite; 57 of them are new (17 model, 10 amount field, 30 wallet views)
 - **Validation:** `openspec validate add-wallets --strict` passes
@@ -14,7 +14,7 @@ Implementation log for this change: what was created or modified, and where the 
 | `5c5521c` | feat: plan the add-wallets change for wallets and categories | `add-wallets-proposal.md` |
 | `44b0090` | feat: add wallet and category models with default categories | `add-wallet-and-category-models.md` |
 | `605f480` | feat: add wallets page with add, edit, archive and restore | `add-wallets-page.md` |
-| this commit | feat: complete the add-wallets change log | `add-wallets-wrap-up.md` |
+| `bdb1803` | feat: complete the add-wallets change log | `add-wallets-wrap-up.md` |
 
 ## Routes
 
@@ -82,9 +82,8 @@ Migrations: `finance.0001_initial` (schema), `finance.0002_default_categories` (
 
 - **Automated:** 90 tests pass; `manage.py check` reports no issues.
 - **Visual (headless Edge):** wallets page with 4 active and 1 archived wallet at 1440px and 390px, add-wallet modal with errors at 1440px, empty state.
-- **Not yet done:** a real-browser pass (task 6.1).
+- **Manual:** real-browser pass by the developer before archiving (task 6.1).
 
 ## Open items before archiving
 
-1. Task 6.1: in a real browser, add a wallet, trigger an error in the modal, edit, archive, open "Archived wallets", restore; check at phone width.
-2. Then run `openspec archive add-wallets`.
+None. Archived on 2026-11-16; specs `wallets` and `categories` moved to `openspec/specs/`.

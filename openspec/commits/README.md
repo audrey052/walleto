@@ -16,7 +16,8 @@ One Markdown record per commit, describing what the commit built, why, which fil
 | 8 | `5c5521c` | [add-wallets-proposal.md](add-wallets-proposal.md) | 1 |
 | 9 | `44b0090` | [add-wallet-and-category-models.md](add-wallet-and-category-models.md) | 1 |
 | 10 | `605f480` | [add-wallets-page.md](add-wallets-page.md) | 1 |
-| 11 | this commit | [add-wallets-wrap-up.md](add-wallets-wrap-up.md) | 1 |
+| 11 | `bdb1803` | [add-wallets-wrap-up.md](add-wallets-wrap-up.md) | 1 |
+| 12 | this commit | [archive-add-wallets.md](archive-add-wallets.md) | 1 |
 
 Commits made before MVP 0's code (`git init`, `.gitignore`, OpenSpec init) have no record.
 
