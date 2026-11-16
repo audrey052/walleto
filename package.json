@@ -1,0 +1,13 @@
+{
+  "name": "walleto",
+  "private": true,
+  "description": "Build tooling for Walleto's CSS. The app itself is Django; Node only compiles Tailwind.",
+  "scripts": {
+    "css:watch": "tailwindcss -i static/src/app.css -o static/css/app.css --watch",
+    "css:build": "tailwindcss -i static/src/app.css -o static/css/app.css --minify"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.1.11",
+    "tailwindcss": "4.1.11"
+  }
+}

@@ -13,6 +13,7 @@ media/
 
 # Node (Tailwind)
 node_modules/
+static/css/
 WORKPLAN.md
 .claude
 docs/design/
