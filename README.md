@@ -54,7 +54,9 @@ npm run css:watch
 python manage.py runserver
 ```
 
-Buka http://127.0.0.1:8000, daftar akun baru, atau masuk dengan akun superuser. Halaman semua komponen ada di `/styleguide/` (hanya saat `DEBUG=True`).
+Data demo (akun `demo@walleto.app`, 3 bulan transaksi): jalankan `python manage.py seed_demo`, atau klik **Try demo account** di halaman login (data dibuat otomatis kalau belum ada). Jalankan ulang `seed_demo` untuk mereset data demo.
+
+Buka http://127.0.0.1:8000, daftar akun baru, coba akun demo, atau masuk dengan akun superuser. Halaman semua komponen ada di `/styleguide/` (hanya saat `DEBUG=True`).
 
 Menjalankan test:
 

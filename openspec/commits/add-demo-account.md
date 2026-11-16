@@ -3,7 +3,7 @@
 **Created:** 2026-11-17
 **Last edited:** 2026-11-17
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `9e1ba0b` feat: add the demo account with seed_demo and a working try demo button
 **Branch:** `main`, parent `f8ff966`
 **OpenSpec change:** `add-transactions` (MVP 2), tasks 5.1–5.3
 **Trigger:** spec `demo-account`; the sign-in page showed a disabled "Try demo account" button since MVP 0.
