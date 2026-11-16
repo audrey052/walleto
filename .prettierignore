@@ -1,0 +1,9 @@
+# Django templates: Prettier's HTML formatter splits {% %} and {{ }} tags across
+# lines, which Django can't parse. Format these by hand.
+templates/
+**/templates/
+
+# Generated or vendored
+static/css/
+static/vendor/
+node_modules/

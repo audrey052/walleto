@@ -17,7 +17,8 @@ Implementation log for this change: what was created or modified, and where the 
 | `9e1ba0b` | feat: add the demo account with seed_demo and a working try demo button | `add-demo-account.md` |
 | `05a739d` | feat: complete the add-transactions change log | `add-transactions-wrap-up.md` |
 | `90c528b` | feat: match the transactions page to the figma table and add csv export | `transactions-figma-table-and-csv.md` |
-| this commit | fix: show only income and expenses in the transactions summary | `transactions-summary-income-expenses.md` |
+| `00e39c5` | fix: show only income and expenses in the transactions summary | `transactions-summary-income-expenses.md` |
+| this commit | fix: restore the transactions template broken by html formatting | `restore-transactions-template.md` |
 
 ## Routes
 

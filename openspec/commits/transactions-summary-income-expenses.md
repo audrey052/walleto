@@ -2,8 +2,8 @@
 
 **Created:** 2026-11-17
 **Last edited:** 2026-11-17
-**Status:** Implemented
-**Commit:** this commit
+**Status:** Implemented, but committed with a template broken by editor formatting; fixed in the next commit (`restore-transactions-template.md`)
+**Commit:** `00e39c5` fix: show only income and expenses in the transactions summary
 **Branch:** `main`, parent `90c528b`
 **OpenSpec change:** `add-transactions` (MVP 2), task 3.8
 **Trigger:** the developer asked to drop Net from the summary line and to label the totals "Income" and "Expenses" instead of "Monthly income" and "Monthly expenses".
@@ -40,7 +40,7 @@ The summary line now reads: "N transactions in November 2026 · Income +Rp… ·
 
 **Executed:**
 
-- `python manage.py test`: all pass.
+- `python manage.py test` was run but its failure (18 errors from the reformatted template) was not checked before committing.
 - `openspec validate add-transactions --strict`: valid.
 
 **Not executed:**
