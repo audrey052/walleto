@@ -14,3 +14,8 @@ media/
 # Node (Tailwind)
 node_modules/
 WORKPLAN.md
+.claude
+docs/design/
+decisions.md
+STYLE.md
+
