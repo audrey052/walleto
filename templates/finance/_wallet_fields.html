@@ -1,0 +1,8 @@
+{% if form.non_field_errors %}
+  <div class="rounded-control border border-clay/30 bg-clay/5 px-3.5 py-3 text-control text-clay" role="alert">
+    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+  </div>
+{% endif %}
+{% include "components/field.html" with field=form.name %}
+{% include "components/field.html" with field=form.type %}
+{% include "components/field.html" with field=form.initial_balance %}

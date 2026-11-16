@@ -26,7 +26,9 @@ SECTIONS = [
         "title": "Wallets",
         "subtitle": "Balances across your cash, bank and e-wallets.",
         "icon": "wallet",
-        "url_name": "core:wallets",
+        "url_name": "finance:wallets",
+        # Every view whose name starts with this is part of the section (list, create, edit...).
+        "match": "finance:wallet",
     },
     {
         "key": "budget",

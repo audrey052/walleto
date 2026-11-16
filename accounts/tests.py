@@ -130,7 +130,7 @@ class AccessTests(TestCase):
     section_urls = [
         "core:dashboard",
         "core:transactions",
-        "core:wallets",
+        "finance:wallets",
         "core:budget",
         "core:savings",
         "core:assistant",

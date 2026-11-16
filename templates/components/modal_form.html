@@ -1,0 +1,27 @@
+{% load icons %}
+{# HTMX modal fragment, loaded into #modal-root (design.md decision 9).                       #}
+{# Opens itself, closes on Cancel / X / Escape / backdrop click, and removes itself.         #}
+{# On validation errors the server re-renders this whole dialog in place (outerHTML swap).   #}
+<dialog class="modal" aria-labelledby="modal-title"
+        x-data x-init="$el.showModal(); ($el.querySelector('.field-invalid .input') || $el.querySelector('.input'))?.focus()"
+        @close="$el.remove()" @click="if ($event.target === $el) $el.close()">
+  <form method="post" action="{{ action }}" hx-post="{{ action }}" hx-target="closest dialog" hx-swap="outerHTML" novalidate>
+    {% csrf_token %}
+    <div class="mb-6 flex items-start justify-between gap-4">
+      <div>
+        <h2 id="modal-title" class="text-modal">{{ title }}</h2>
+        {% if description %}<p class="mt-1.5 text-control text-secondary">{{ description }}</p>{% endif %}
+      </div>
+      <button type="button" class="btn-icon -mt-1.5 -mr-2" aria-label="Close dialog" @click="$el.closest('dialog').close()">
+        {% icon "close" %}
+      </button>
+    </div>
+    <div class="flex flex-col gap-4">
+      {% include body %}
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn" @click="$el.closest('dialog').close()">Cancel</button>
+      <button type="submit" class="btn {% if danger %}btn-danger{% else %}btn-primary{% endif %}">{{ submit_label }}</button>
+    </div>
+  </form>
+</dialog>

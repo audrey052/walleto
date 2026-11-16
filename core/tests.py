@@ -56,7 +56,7 @@ class AppShellTests(TestCase):
         self.client.force_login(self.user)
 
     def test_sidebar_lists_six_sections_and_marks_one_active(self):
-        response = self.client.get(reverse("core:wallets"))
+        response = self.client.get(reverse("finance:wallets"))
         content = response.content.decode()
         for title in ["Dashboard", "Transactions", "Wallets", "Budget", "Savings goals", "Assistant"]:
             self.assertIn(title, content)

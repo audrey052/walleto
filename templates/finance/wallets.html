@@ -1,0 +1,93 @@
+{% extends "layouts/app.html" %}
+{% load icons money %}
+
+{% block title %}Wallets{% endblock %}
+
+{% block content %}
+  <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1>Wallets</h1>
+      <p class="mt-1.5 text-body text-secondary">{{ active_section.subtitle }}</p>
+    </div>
+    <a href="{% url 'finance:wallet_create' %}" class="btn btn-primary self-start sm:self-auto"
+       hx-get="{% url 'finance:wallet_create' %}" hx-target="#modal-root">
+      {% icon "plus" size=16 %} Add wallet
+    </a>
+  </div>
+
+  {% if wallets %}
+    <section class="mb-7 border-b border-border pb-9">
+      <p class="eyebrow">Total balance</p>
+      <p class="mt-2">{% amount total_balance css_class="amount-display" %}</p>
+      <p class="mt-1 text-caption text-muted">
+        Across {{ wallets|length }} active wallet{{ wallets|length|pluralize }}
+      </p>
+    </section>
+
+    <div class="grid gap-5 md:grid-cols-2">
+      {% for wallet in wallets %}
+        <article class="panel flex flex-col p-6 transition-colors hover:border-[#9aaa92]">
+          <span class="inline-grid h-10 min-w-[52px] place-items-center self-start rounded-[5px] border border-[#e9ebe0] bg-[#f3f4ed] px-2 text-[16px] font-bold"
+                style="color: {{ wallet.color }}" aria-hidden="true">{{ wallet.monogram }}</span>
+          <div class="mt-5 mb-2 flex items-center justify-between gap-3">
+            <h2 class="truncate">{{ wallet.name }}</h2>
+            <span class="shrink-0 text-caption text-muted">{{ wallet.get_type_display }}</span>
+          </div>
+          <p class="text-[28px] font-medium tracking-[-0.8px]">{% amount wallet.balance %}</p>
+          <div class="mt-6 flex items-center justify-between gap-3 border-t border-border pt-4">
+            <span class="text-caption text-muted">Added {{ wallet.created_at|date:"j M Y" }}</span>
+            <div class="flex items-center gap-4">
+              <a href="{% url 'finance:wallet_edit' wallet.pk %}" class="btn-text"
+                 hx-get="{% url 'finance:wallet_edit' wallet.pk %}" hx-target="#modal-root"
+                 aria-label="Edit {{ wallet.name }}">{% icon "edit" size=15 %} Edit</a>
+              <a href="{% url 'finance:wallet_archive' wallet.pk %}" class="btn-text text-secondary hover:text-ink"
+                 hx-get="{% url 'finance:wallet_archive' wallet.pk %}" hx-target="#modal-root"
+                 aria-label="Archive {{ wallet.name }}">{% icon "archive" size=15 %} Archive</a>
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <section class="panel">
+      <div class="empty-state">
+        <span class="empty-state-icon">{% icon "wallet" size=24 %}</span>
+        <h2>Add your first wallet</h2>
+        <p class="mt-2 max-w-sm text-body text-secondary">
+          Start with where your money is today: cash in hand, a bank account or an e-wallet like GoPay.
+        </p>
+        <a href="{% url 'finance:wallet_create' %}" class="btn btn-primary mt-6"
+           hx-get="{% url 'finance:wallet_create' %}" hx-target="#modal-root">{% icon "plus" size=16 %} Add wallet</a>
+      </div>
+    </section>
+  {% endif %}
+
+  {% if archived_wallets %}
+    <section class="mt-10" x-data="{ open: false }">
+      <button type="button" class="flex items-center gap-2 text-control font-medium text-secondary hover:text-ink"
+              @click="open = !open" :aria-expanded="open" aria-controls="archived-wallets">
+        <span class="transition-transform" :class="open && 'rotate-90'">{% icon "chevron-right" size=15 %}</span>
+        Archived wallets ({{ archived_wallets|length }})
+      </button>
+      <ul id="archived-wallets" x-show="open" x-cloak class="panel mt-3 divide-y divide-border">
+        {% for wallet in archived_wallets %}
+          <li class="flex items-center gap-3 px-5 py-3.5">
+            <span class="inline-grid h-8 min-w-[42px] place-items-center rounded-[5px] border border-[#e9ebe0] bg-[#f3f4ed] px-1.5 text-[13px] font-bold opacity-70"
+                  style="color: {{ wallet.color }}" aria-hidden="true">{{ wallet.monogram }}</span>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-control font-medium">{{ wallet.name }}</p>
+              <p class="text-caption text-muted">{{ wallet.get_type_display }} · archived {{ wallet.archived_at|date:"j M Y" }}</p>
+            </div>
+            <span class="hidden text-control text-secondary sm:inline">{% amount wallet.balance %}</span>
+            <form method="post" action="{% url 'finance:wallet_restore' wallet.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn">{% icon "restore" size=15 %} Restore</button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+  <div id="modal-root"></div>
+{% endblock %}

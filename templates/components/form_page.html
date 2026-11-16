@@ -1,0 +1,20 @@
+{% extends "layouts/app.html" %}
+{# Full-page version of components/modal_form.html, used when JavaScript/HTMX is not involved. #}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+  {% include "components/page_heading.html" with title=title subtitle=description %}
+  <section class="panel max-w-xl">
+    <form method="post" action="{{ action }}" class="panel-body" novalidate>
+      {% csrf_token %}
+      <div class="flex flex-col gap-4">
+        {% include body %}
+      </div>
+      <div class="modal-footer">
+        <a href="{{ cancel_url|default:'/' }}" class="btn">Cancel</a>
+        <button type="submit" class="btn {% if danger %}btn-danger{% else %}btn-primary{% endif %}">{{ submit_label }}</button>
+      </div>
+    </form>
+  </section>
+{% endblock %}

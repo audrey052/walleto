@@ -3,7 +3,7 @@
 **Created:** 2026-11-16
 **Last edited:** 2026-11-16
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `44b0090` feat: add wallet and category models with default categories
 **Branch:** `main`, parent `5c5521c`
 **OpenSpec change:** `add-wallets` (MVP 1), tasks 1.1–1.8, 5.1–5.2
 **Trigger:** specs `wallets` and `categories`; every later money feature needs a wallet and a category.

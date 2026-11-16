@@ -22,10 +22,6 @@ def transactions(request):
     return _placeholder(request, "transactions")
 
 
-def wallets(request):
-    return _placeholder(request, "wallets")
-
-
 def budget(request):
     return _placeholder(request, "budget")
 
