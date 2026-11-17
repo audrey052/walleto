@@ -1,0 +1,3 @@
+{% load money %}
+{% include "components/field.html" with field=form.limit %}
+<p class="text-caption text-muted">Spent so far: {{ spent|rupiah }}.</p>

@@ -11,7 +11,8 @@ from datetime import date, timedelta
 from django.contrib.auth import get_user_model
 from django.db import transaction as db_transaction
 
-from .models import Category, Transaction, Transfer, Wallet
+from . import budgets
+from .models import MIN_CATEGORY_LIMIT, Budget, Category, Transaction, Transfer, Wallet
 
 DEMO_EMAIL = "demo@walleto.app"
 DEMO_NAME = "Aditya Ramadhan"
@@ -96,6 +97,7 @@ def get_demo_user():
 def build_demo(today):
     user = get_demo_user()
     # Children first: wallets are PROTECTed by transactions and transfers.
+    Budget.objects.filter(user=user).delete()
     Transaction.objects.filter(user=user).delete()
     Transfer.objects.filter(user=user).delete()
     Wallet.objects.filter(user=user).delete()
@@ -154,4 +156,47 @@ def build_demo(today):
     # bulk_create skips save(), so kind was set explicitly above.
     Transaction.objects.bulk_create(transactions)
     Transfer.objects.bulk_create(transfers)
+    _build_budgets(user, today, transactions)
     return user
+
+
+def _round_up(amount, step=50_000):
+    return -(-amount // step) * step
+
+
+def _build_budgets(user, today, transactions):
+    """Category limits for the three demo months (demo-account spec, "Demo budgets").
+
+    Limits come from the first (full) month's spending per category plus 5%,
+    the way a person would plan from last month, and are the same for every
+    month. If no category in the current month has reached 85% yet, the
+    category closest to its limit is tightened so it sits around 90%, so the
+    Budget page always has a warning to show.
+    """
+    def spent_in(month_start):
+        totals = {}
+        for t in transactions:
+            if t.kind == Category.Kind.EXPENSE and (t.date.year, t.date.month) == (month_start.year, month_start.month):
+                totals[t.category_id] = totals.get(t.category_id, 0) + t.amount
+        return totals
+
+    first = _first_of_month(today, 2)
+    reference = spent_in(first)
+    limits = {cid: max(100_000, _round_up(amount * 105 // 100)) for cid, amount in reference.items()}
+    if not limits:
+        return
+
+    current = _first_of_month(today, 0)
+    now = spent_in(current)
+    current_limits = dict(limits)
+    if not any(budgets.status(now.get(cid, 0), limit) != budgets.NORMAL for cid, limit in limits.items()):
+        closest = max(limits, key=lambda cid: now.get(cid, 0) / limits[cid])
+        if now.get(closest, 0) > 0:
+            current_limits[closest] = max(MIN_CATEGORY_LIMIT, _round_up(now[closest] * 100 // 90, 1_000))
+
+    rows = []
+    for months_back in (2, 1, 0):
+        month = _first_of_month(today, months_back)
+        month_limits = current_limits if months_back == 0 else limits
+        rows += [Budget(user=user, category_id=cid, month=month, limit=limit) for cid, limit in month_limits.items()]
+    Budget.objects.bulk_create(rows)

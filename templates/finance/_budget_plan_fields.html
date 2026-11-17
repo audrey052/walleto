@@ -1,0 +1,4 @@
+{% include "components/field.html" with field=form.total %}
+{% if is_first_split %}
+  <p class="text-caption text-muted">We'll split it across your categories for {{ month_start|date:"F Y" }}. You can change each limit afterwards.</p>
+{% endif %}

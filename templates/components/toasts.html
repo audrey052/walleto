@@ -1,11 +1,18 @@
 {% load icons %}
+{# Levels: success (forest check), warning (amber), error (clay). A message whose extra_tags is a  #}
+{# site path gets a "Review your budget" link (add-budgets design decision 8).                       #}
 {% if messages %}
 <div class="pointer-events-none fixed right-4 bottom-24 z-50 flex flex-col gap-2 md:right-6 md:bottom-6" aria-live="polite">
   {% for message in messages %}
     <div x-data="toast" x-show="visible" x-transition.opacity.duration.200ms
-         class="toast pointer-events-auto {% if message.level_tag == 'error' %}toast-error{% endif %}" role="status">
-      <span class="toast-icon">{% if message.level_tag == 'error' %}{% icon "info" size=15 %}{% else %}{% icon "check" size=15 %}{% endif %}</span>
-      <p class="flex-1 pt-0.5 text-control text-ink">{{ message }}</p>
+         class="toast pointer-events-auto {% if message.level_tag == 'error' %}toast-error{% elif message.level_tag == 'warning' %}toast-warning{% endif %}" role="status">
+      <span class="toast-icon">{% if message.level_tag == 'error' or message.level_tag == 'warning' %}{% icon "info" size=15 %}{% else %}{% icon "check" size=15 %}{% endif %}</span>
+      <div class="flex-1 pt-0.5">
+        <p class="text-control text-ink">{{ message.message }}</p>
+        {% if message.extra_tags|slice:":1" == "/" %}
+          <a href="{{ message.extra_tags }}" class="btn-text mt-1 text-caption">Review your budget {% icon "arrow-right" size=13 %}</a>
+        {% endif %}
+      </div>
       <button type="button" class="btn-icon -my-1.5 size-7" @click="visible = false" aria-label="Dismiss">{% icon "close" size=15 %}</button>
     </div>
   {% endfor %}

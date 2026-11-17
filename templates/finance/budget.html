@@ -1,0 +1,132 @@
+{% extends "layouts/app.html" %}
+{% load icons money %}
+
+{% block title %}Budget{% endblock %}
+
+{% block content %}
+  {# Page heading with the month picker and the plan button, as in the Figma Budget section #}
+  <div class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <h1>Budget</h1>
+      <p class="mt-1.5 text-body text-secondary">{{ active_section.subtitle }}</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2.5">
+      <div class="flex h-9 items-center rounded-control border border-border bg-surface">
+        <a href="{{ prev_url }}" class="mx-0.5 grid size-7 place-items-center rounded-chip text-secondary hover:bg-forest-tint hover:text-forest" aria-label="Previous month">{% icon "chevron-left" size=16 %}</a>
+        <span class="flex min-w-[150px] items-center justify-center gap-2 text-control font-medium">
+          <span class="text-muted">{% icon "calendar" size=15 %}</span>{{ month_start|date:"F Y" }}
+        </span>
+        {% if next_url %}
+          <a href="{{ next_url }}" class="mx-0.5 grid size-7 place-items-center rounded-chip text-secondary hover:bg-forest-tint hover:text-forest" aria-label="Next month">{% icon "chevron-right" size=16 %}</a>
+        {% else %}
+          <span class="mx-0.5 grid size-7 place-items-center text-secondary opacity-30" aria-hidden="true">{% icon "chevron-right" size=16 %}</span>
+        {% endif %}
+      </div>
+      {% if plan.has_plan %}
+        <a href="{{ plan_url }}" class="btn btn-primary" hx-get="{{ plan_url }}" hx-target="#modal-root">Edit monthly plan</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if plan.has_plan %}
+    {# Overview: plan, what is left, days left and per day #}
+    <section class="panel mb-6 flex flex-col gap-6 bg-forest-tint p-6 md:p-7 lg:flex-row lg:items-center lg:justify-between lg:gap-12">
+      <div class="min-w-0">
+        <p class="eyebrow">Your monthly spending plan</p>
+        <p class="mt-2">{% amount plan.plan css_class="amount-display" %}</p>
+        <p class="mt-1 text-caption text-secondary">
+          {% if plan.remaining >= 0 %}
+            {{ plan.remaining|rupiah }} left to spend in {{ month_start|date:"F Y" }}
+          {% else %}
+            <span class="text-clay">{{ plan.over_by|rupiah }} over plan</span> in {{ month_start|date:"F Y" }}
+          {% endif %}
+        </p>
+        {% if plan.days_left %}
+          <p class="mt-1 text-caption text-muted">
+            {{ plan.days_left }} day{{ plan.days_left|pluralize }} left{% if plan.per_day is not None %} · {{ plan.per_day|rupiah }} a day{% endif %}
+          </p>
+        {% endif %}
+      </div>
+      <div class="w-full lg:w-[38%]">
+        <div class="mb-3 flex items-center justify-between text-caption text-secondary">
+          <span>Spent so far</span>
+          <strong class="font-semibold {% if plan.status == 'over' %}text-clay{% elif plan.status == 'warning' %}text-amber{% else %}text-ink{% endif %}">{{ plan.percent }}%</strong>
+        </div>
+        {% include "components/progress.html" with percent=plan.percent label="Monthly plan spent" %}
+        <p class="mt-3 text-caption text-muted">{{ plan.spent|rupiah }} of {{ plan.plan|rupiah }}</p>
+      </div>
+    </section>
+
+    {# One row per budgeted category, then the categories without a limit #}
+    <section class="panel">
+      <div class="px-5 pt-6 pb-5 md:px-6">
+        <h2 class="text-section font-semibold">A place for every Rupiah</h2>
+        <p class="mt-1 text-caption text-muted">Your category budgets add up to your monthly plan.</p>
+      </div>
+      <ul>
+        {% for row in plan.rows %}
+          {% url 'finance:budget_category' row.category.pk as edit_url %}
+          <li class="cursor-pointer border-t border-[#f0efe9] transition-colors hover:bg-[#fdfdfa]"
+              hx-get="{{ edit_url }}{{ month_query }}" hx-target="#modal-root">
+            <a href="{{ edit_url }}{{ month_query }}" onclick="event.preventDefault()"
+               class="grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-2.5 px-5 py-5 md:flex md:gap-4 md:px-6"
+               aria-label="Edit the {{ row.category.name }} budget">
+              <span class="grid size-8 shrink-0 place-items-center rounded-[7px] border border-[#eeede6] bg-[#f8f7f2] text-[#8a8370]">{% icon row.category.icon size=17 %}</span>
+              <span class="min-w-0 md:w-48 md:shrink-0">
+                <strong class="block truncate text-control font-semibold">{{ row.category.name }}</strong>
+                <span class="mt-0.5 block text-caption {% if row.status == 'over' %}text-clay{% elif row.status == 'warning' %}text-amber{% else %}text-muted{% endif %}">
+                  {% if row.status == "over" %}Over by {{ row.over_by|rupiah }}{% elif row.status == "warning" %}Getting close to your limit{% else %}A little breathing room{% endif %}
+                </span>
+              </span>
+              <span class="text-right md:order-last md:flex md:items-center md:gap-4">
+                <span class="block md:w-36">
+                  <strong class="block text-control font-semibold whitespace-nowrap">{{ row.spent|rupiah }}</strong>
+                  <span class="block text-caption whitespace-nowrap text-muted">of {{ row.limit|rupiah }}</span>
+                </span>
+                <span class="hidden w-10 text-caption md:block {% if row.status == 'over' %}text-clay{% elif row.status == 'warning' %}text-amber{% else %}text-secondary{% endif %}">{{ row.percent }}%</span>
+              </span>
+              <span class="col-span-3 flex items-center gap-3 md:mx-5 md:flex-1">
+                <span class="flex-1">{% include "components/progress.html" with percent=row.percent color=row.category.color label=row.category.name %}</span>
+                <span class="text-caption md:hidden {% if row.status == 'over' %}text-clay{% elif row.status == 'warning' %}text-amber{% else %}text-secondary{% endif %}">{{ row.percent }}%</span>
+              </span>
+            </a>
+          </li>
+        {% endfor %}
+        {% for row in plan.unbudgeted %}
+          {% url 'finance:budget_category' row.category.pk as edit_url %}
+          <li class="flex items-center gap-3 border-t border-[#f0efe9] px-5 py-4 md:gap-4 md:px-6">
+            <span class="grid size-8 shrink-0 place-items-center rounded-[7px] border border-[#eeede6] bg-[#f8f7f2] text-[#b3ad9c]">{% icon row.category.icon size=17 %}</span>
+            <span class="min-w-0 flex-1">
+              <strong class="block truncate text-control font-medium text-secondary">{{ row.category.name }}</strong>
+              <span class="mt-0.5 block text-caption text-muted">No limit set{% if row.spent %} · {{ row.spent|rupiah }} spent{% endif %}</span>
+            </span>
+            <a href="{{ edit_url }}{{ month_query }}" class="btn-text shrink-0"
+               hx-get="{{ edit_url }}{{ month_query }}" hx-target="#modal-root">{% icon "plus" size=15 %} Set limit</a>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% else %}
+    <section class="panel">
+      <div class="empty-state">
+        <span class="empty-state-icon">{% icon "budget" size=24 %}</span>
+        <h2>Give {{ month_start|date:"F" }} a plan</h2>
+        <p class="mt-2 max-w-sm text-body text-secondary">
+          Enter one amount for the month. We'll split it across your categories, and you can adjust each limit after.
+        </p>
+        <div class="mt-6 flex flex-wrap justify-center gap-2.5">
+          <a href="{{ plan_url }}" class="btn btn-primary" hx-get="{{ plan_url }}" hx-target="#modal-root">Set monthly plan</a>
+          {% if can_copy %}
+            <form method="post" action="{{ copy_url }}">
+              {% csrf_token %}
+              <button type="submit" class="btn">Copy last month's budget</button>
+            </form>
+          {% endif %}
+        </div>
+        {% if can_copy %}
+          <p class="mt-3 text-caption text-muted">Copies every category limit from {{ prev_month_start|date:"F Y" }}.</p>
+        {% endif %}
+      </div>
+    </section>
+  {% endif %}
+{% endblock %}

@@ -25,7 +25,7 @@
     <div class="modal-footer">
       {% if delete_url %}
         <button type="button" class="btn-text mr-auto text-clay hover:text-clay"
-                hx-get="{{ delete_url }}" hx-target="closest dialog" hx-swap="outerHTML">Delete</button>
+                hx-get="{{ delete_url }}" hx-target="closest dialog" hx-swap="outerHTML">{{ delete_label|default:"Delete" }}</button>
       {% endif %}
       <button type="button" class="btn" @click="$el.closest('dialog').close()">{% if hide_submit %}Close{% else %}Cancel{% endif %}</button>
       {% if not hide_submit %}

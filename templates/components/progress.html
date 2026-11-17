@@ -1,8 +1,9 @@
-{# Usage: {% include "components/progress.html" with percent=68 label="Food & drinks budget" %} #}
-{# Colour follows STYLE.md: forest below 90%, amber 90-100%, clay above 100%. #}
-<div class="progress {% if percent > 100 %}progress-over{% elif percent >= 90 %}progress-warning{% endif %}"
+{# Usage: {% include "components/progress.html" with percent=68 label="Food & drinks budget" color="#1F5C4A" %} #}
+{# Colour follows STYLE.md: normal below 85% (forest, or `color` when given), amber 85-100%, clay above 100%. #}
+{# `percent` is a whole number, already rounded down by the caller.                                        #}
+<div class="progress {% if percent > 100 %}progress-over{% elif percent >= 85 %}progress-warning{% endif %}"
      role="progressbar" aria-valuemin="0" aria-valuemax="100"
      aria-valuenow="{% if percent > 100 %}100{% else %}{{ percent }}{% endif %}"
      {% if label %}aria-label="{{ label }}"{% endif %}>
-  <span style="width: {% if percent > 100 %}100{% elif percent < 0 %}0{% else %}{{ percent }}{% endif %}%"></span>
+  <span style="width: {% if percent > 100 %}100{% elif percent < 0 %}0{% else %}{{ percent }}{% endif %}%;{% if color and percent < 85 %} background: {{ color }};{% endif %}"></span>
 </div>

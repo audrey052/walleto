@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views, views_activity
+from . import views, views_activity, views_budget
 
 app_name = "finance"
 
@@ -18,4 +18,9 @@ urlpatterns = [
     path("transfers/new/", views_activity.transfer_create, name="transfer_create"),
     path("transfers/<int:pk>/edit/", views_activity.transfer_edit, name="transfer_edit"),
     path("transfers/<int:pk>/delete/", views_activity.transfer_delete, name="transfer_delete"),
+    path("budget/", views_budget.budget_page, name="budget"),
+    path("budget/plan/", views_budget.budget_plan, name="budget_plan"),
+    path("budget/copy/", views_budget.budget_copy, name="budget_copy"),
+    path("budget/category/<int:category_id>/", views_budget.budget_category, name="budget_category"),
+    path("budget/category/<int:category_id>/remove/", views_budget.budget_category_remove, name="budget_category_remove"),
 ]

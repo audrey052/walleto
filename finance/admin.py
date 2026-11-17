@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Category, Transaction, Transfer, Wallet
+from .models import Budget, Category, Transaction, Transfer, Wallet
 
 
 @admin.register(Wallet)
@@ -13,7 +13,7 @@ class WalletAdmin(admin.ModelAdmin):
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ["name", "kind", "is_default", "user", "color", "icon", "order"]
+    list_display = ["name", "kind", "is_default", "user", "color", "icon", "order", "budget_share"]
     list_filter = ["kind"]
     search_fields = ["name", "user__email"]
 
@@ -35,3 +35,10 @@ class TransferAdmin(admin.ModelAdmin):
     list_display = ["date", "from_wallet", "to_wallet", "amount", "user"]
     search_fields = ["note", "user__email"]
     date_hierarchy = "date"
+
+
+@admin.register(Budget)
+class BudgetAdmin(admin.ModelAdmin):
+    list_display = ["month", "category", "limit", "user"]
+    list_filter = ["month", "category"]
+    search_fields = ["user__email"]

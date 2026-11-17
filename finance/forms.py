@@ -4,7 +4,8 @@ from django.utils import timezone
 
 from core.forms import AmountField
 
-from .models import Category, Transaction, Transfer, Wallet
+from . import budgets
+from .models import MIN_CATEGORY_LIMIT, MIN_PLAN_TOTAL, Category, Transaction, Transfer, Wallet
 
 DUPLICATE_NAME = "You already have a wallet with this name."
 AMOUNT_POSITIVE = "Amount must be greater than 0."
@@ -172,3 +173,51 @@ class TransferForm(_DateNotInFuture, forms.ModelForm):
         # Model constraints skip fields that already have errors, so the
         # database's same-wallet check never adds a second, less friendly message.
         return cleaned
+
+
+PLAN_TOO_SMALL = "The plan must be at least Rp100.000."
+LIMIT_TOO_SMALL = "The limit must be at least Rp1.000."
+
+
+class PlanForm(forms.Form):
+    """One total for the month: first split or proportional rescale (budgets spec)."""
+
+    total = AmountField(
+        label="Monthly spending budget (Rp)",
+        error_messages={"required": PLAN_TOO_SMALL},
+        widget=forms.TextInput(attrs={"placeholder": "e.g. 8.000.000"}),
+    )
+
+    def __init__(self, *args, user, year, month, **kwargs):
+        self.user, self.year, self.month = user, year, month
+        super().__init__(*args, **kwargs)
+        _style(self)
+
+    def clean_total(self):
+        total = self.cleaned_data["total"]
+        if total is None or total < MIN_PLAN_TOTAL:
+            raise forms.ValidationError(PLAN_TOO_SMALL)
+        self.limits = budgets.plan_limits(self.user, self.year, self.month, total)
+        if min(self.limits.values()) < MIN_CATEGORY_LIMIT:
+            raise forms.ValidationError(
+                "That total would make a category limit smaller than Rp1.000. Enter a larger total."
+            )
+        return total
+
+
+class CategoryLimitForm(forms.Form):
+    limit = AmountField(
+        label="Monthly limit (Rp)",
+        error_messages={"required": LIMIT_TOO_SMALL},
+        widget=forms.TextInput(attrs={"placeholder": "e.g. 2.400.000"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _style(self)
+
+    def clean_limit(self):
+        limit = self.cleaned_data["limit"]
+        if limit is None or limit < MIN_CATEGORY_LIMIT:
+            raise forms.ValidationError(LIMIT_TOO_SMALL)
+        return limit

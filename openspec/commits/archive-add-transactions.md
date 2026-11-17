@@ -3,7 +3,7 @@
 **Created:** 2026-11-17
 **Last edited:** 2026-11-17
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `fc953ab` feat: archive the add-transactions change
 **Branch:** `main`, parent `511cfd4`
 **OpenSpec change:** `add-transactions` (MVP 2), closing
 **Trigger:** MVP 2 accepted and archived by the developer with `openspec archive add-transactions`.

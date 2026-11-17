@@ -9,39 +9,22 @@ from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import dateformat, timezone
 
 from core.htmx import redirect_after_save, render_form, safe_next
+from core.templatetags.money import rupiah
 
+from . import budgets
 from .forms import TransactionForm, TransferForm
-from .models import Category, Transaction, Transfer, Wallet
+from .models import Budget, Category, Transaction, Transfer, Wallet
+from .months import month_param as _month_param
+from .months import parse_month as _parse_month
+from .months import shift as _shift
 
 PAGE_SIZE = 50
 
 
 # ---------- helpers ----------
-
-def _parse_month(value, today):
-    """`YYYY-MM` -> (year, month); invalid or future values fall back to the current month."""
-    try:
-        year, month = (int(part) for part in (value or "").split("-"))
-        if not 1 <= month <= 12 or year < 2000:
-            raise ValueError
-    except ValueError:
-        return today.year, today.month
-    if (year, month) > (today.year, today.month):
-        return today.year, today.month
-    return year, month
-
-
-def _shift(year, month, delta):
-    index = year * 12 + (month - 1) + delta
-    return index // 12, index % 12 + 1
-
-
-def _month_param(year, month):
-    return f"{year:04d}-{month:02d}"
-
 
 def _int_or_none(value):
     try:
@@ -180,6 +163,42 @@ def transaction_export(request):
     return response
 
 
+# ---------- budget warning (transactions spec, add-budgets design decision 7) ----------
+
+def _budget_watch(user, data):
+    """Before saving: the limit and spent amount of the category and month the
+    expense ends up in, or None when there is nothing to warn about."""
+    category, day = data["category"], data["date"]
+    if category.kind != Category.Kind.EXPENSE:
+        return None
+    budget = Budget.objects.for_user(user).in_month(day.year, day.month).filter(category=category).first()
+    if budget is None:
+        return None
+    before = budgets.category_spent(user, category, day.year, day.month)
+    return {"user": user, "category": category, "day": day, "limit": budget.limit, "before": before}
+
+
+def _budget_warning(request, watch):
+    """After saving: a toast when the save crossed 85% or 100% of the limit."""
+    if watch is None:
+        return
+    category, day, limit = watch["category"], watch["day"], watch["limit"]
+    after = budgets.category_spent(watch["user"], category, day.year, day.month)
+    crossed = budgets.crossing(watch["before"], after, limit)
+    link = f"{reverse('finance:budget')}?month={_month_param(day.year, day.month)}"
+    month_name = dateformat.format(day, "F")
+    if crossed == budgets.OVER:
+        messages.error(
+            request, f"{category.name} is over its {month_name} budget by {rupiah(after - limit)}.", extra_tags=link
+        )
+    elif crossed == budgets.WARNING:
+        messages.warning(
+            request,
+            f"{category.name} is at {budgets.percent(after, limit)}% of its {month_name} budget.",
+            extra_tags=link,
+        )
+
+
 # ---------- transactions ----------
 
 def _own_transaction(request, pk):
@@ -212,8 +231,10 @@ def _transaction_form(request, form, *, title, action, submit_label, delete_url=
 def transaction_create(request):
     form = TransactionForm(request.POST or None, user=request.user)
     if request.method == "POST" and form.is_valid():
+        watch = _budget_watch(request.user, form.cleaned_data)
         record = form.save()
         messages.success(request, "Transaction added.")
+        _budget_warning(request, watch)
         return redirect_after_save(request, _after_save_url(request, record))
     return _transaction_form(
         request, form, title="Add transaction",
@@ -225,8 +246,10 @@ def transaction_edit(request, pk):
     record = _own_transaction(request, pk)
     form = TransactionForm(request.POST or None, instance=record, user=request.user)
     if request.method == "POST" and form.is_valid():
+        watch = _budget_watch(request.user, form.cleaned_data)
         record = form.save()
         messages.success(request, "Transaction updated.")
+        _budget_warning(request, watch)
         return redirect_after_save(request, _after_save_url(request, record))
     return _transaction_form(
         request, form, title="Edit transaction",

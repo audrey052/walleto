@@ -37,7 +37,8 @@ SECTIONS = [
         "title": "Budget",
         "subtitle": "Monthly limits per category.",
         "icon": "budget",
-        "url_name": "core:budget",
+        "url_name": "finance:budget",
+        "match": "finance:budget",
     },
     {
         "key": "savings",

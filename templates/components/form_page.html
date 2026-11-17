@@ -13,7 +13,7 @@
         {% include body %}
       </div>
       <div class="modal-footer">
-        {% if delete_url %}<a href="{{ delete_url }}" class="btn-text mr-auto text-clay hover:text-clay">Delete</a>{% endif %}
+        {% if delete_url %}<a href="{{ delete_url }}" class="btn-text mr-auto text-clay hover:text-clay">{{ delete_label|default:"Delete" }}</a>{% endif %}
         <a href="{{ cancel_url|default:'/' }}" class="btn">{% if hide_submit %}Back{% else %}Cancel{% endif %}</a>
         {% if not hide_submit %}
           <button type="submit" class="btn {% if danger %}btn-danger{% else %}btn-primary{% endif %}">{{ submit_label }}</button>

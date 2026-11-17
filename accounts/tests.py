@@ -131,7 +131,7 @@ class AccessTests(TestCase):
         "core:dashboard",
         "finance:transactions",
         "finance:wallets",
-        "core:budget",
+        "finance:budget",
         "core:savings",
         "core:assistant",
     ]
@@ -149,7 +149,7 @@ class AccessTests(TestCase):
                 self.assertRedirects(response, f"{reverse('accounts:login')}?next={url}")
 
     def test_returns_to_requested_page_after_sign_in(self):
-        budget = reverse("core:budget")
+        budget = reverse("finance:budget")
         response = self.client.post(
             f"{reverse('accounts:login')}?next={budget}",
             {"username": "aditya@example.com", "password": STRONG_PASSWORD, "next": budget},

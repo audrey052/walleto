@@ -150,6 +150,8 @@ class Category(models.Model):
     color = models.CharField(max_length=7)
     icon = models.CharField(max_length=30, default="other")
     order = models.PositiveSmallIntegerField(default=100)
+    # Weight for the first split of a monthly plan (add-budgets design decision 2).
+    budget_share = models.PositiveSmallIntegerField(default=10)
 
     objects = CategoryQuerySet.as_manager()
 
@@ -306,3 +308,53 @@ class Transfer(models.Model):
 
     def __str__(self):
         return f"{self.from_wallet} → {self.to_wallet} ({self.amount})"
+
+
+MIN_CATEGORY_LIMIT = 1_000
+MIN_PLAN_TOTAL = 100_000
+
+
+class BudgetQuerySet(models.QuerySet):
+    def for_user(self, user):
+        return self.filter(user=user)
+
+    def in_month(self, year, month):
+        return self.filter(month=date(year, month, 1))
+
+
+class Budget(models.Model):
+    """A spending limit for one expense category in one month (budgets spec).
+
+    The monthly plan is the sum of a month's limits; it is never stored
+    (add-budgets design decision 1).
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="budgets"
+    )
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="budgets")
+    # Always the first day of the month.
+    month = models.DateField()
+    limit = models.BigIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = BudgetQuerySet.as_manager()
+
+    class Meta:
+        ordering = ["month", "category__order", "category__name"]
+        constraints = [
+            models.UniqueConstraint(
+                "user", "category", "month", name="unique_budget_per_category_month"
+            ),
+            models.CheckConstraint(
+                condition=Q(limit__gte=MIN_CATEGORY_LIMIT), name="budget_limit_minimum"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.category} {self.month:%b %Y}: {self.limit}"
+
+    def save(self, *args, **kwargs):
+        self.month = self.month.replace(day=1)
+        super().save(*args, **kwargs)

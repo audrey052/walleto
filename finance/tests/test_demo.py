@@ -7,8 +7,9 @@ from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 
+from finance import budgets
 from finance.demo import DEMO_EMAIL, build_demo
-from finance.models import Transaction, Transfer, Wallet
+from finance.models import Budget, Category, Transaction, Transfer, Wallet
 
 User = get_user_model()
 TODAY = date(2026, 11, 16)
@@ -62,6 +63,29 @@ class DemoDataTests(TestCase):
         self.assertEqual(Transaction.objects.filter(user=user).count(), count)
         self.assertTrue(Wallet.objects.filter(user=other, name="Mandiri").exists())
         self.assertEqual(User.objects.filter(email=DEMO_EMAIL).count(), 1)
+
+    def test_budgets_for_each_month(self):
+        user = build_demo(TODAY)
+        months = set(Budget.objects.filter(user=user).values_list("month", flat=True))
+        self.assertEqual(months, {date(2026, 9, 1), date(2026, 10, 1), date(2026, 11, 1)})
+
+    def test_current_month_has_something_to_notice(self):
+        # Any day of the month, including the first days, has a category at 85% or more.
+        for day in (date(2026, 11, 2), date(2026, 11, 16), date(2026, 11, 30), date(2027, 2, 5)):
+            with self.subTest(day=day):
+                user = build_demo(day)
+                plan = budgets.month_budget(user, day.year, day.month, day)
+                self.assertTrue(any(row.status != budgets.NORMAL for row in plan.rows))
+
+    def test_reset_keeps_other_users_budgets(self):
+        other = User.objects.create_user(email="sari@example.com", password="quiet-ledger-2026", full_name="Sari")
+        food = Category.objects.get(user=None, name="Food & drinks")
+        Budget.objects.create(user=other, category=food, month=date(2026, 11, 1), limit=2_000_000)
+        user = build_demo(TODAY)
+        count = Budget.objects.filter(user=user).count()
+        build_demo(TODAY)
+        self.assertEqual(Budget.objects.filter(user=user).count(), count)
+        self.assertTrue(Budget.objects.filter(user=other, limit=2_000_000).exists())
 
     def test_command(self):
         out = StringIO()

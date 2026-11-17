@@ -283,6 +283,13 @@
     @apply text-clay;
     background: color-mix(in srgb, var(--color-clay) 10%, white);
   }
+  .toast-warning {
+    border-color: color-mix(in srgb, var(--color-amber) 35%, white);
+  }
+  .toast-warning .toast-icon {
+    @apply text-amber;
+    background: color-mix(in srgb, var(--color-amber) 12%, white);
+  }
 
   /* App shell: sidebar width is CSS-driven so it is right before Alpine loads */
   .sidebar {
