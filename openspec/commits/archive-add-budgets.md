@@ -3,7 +3,7 @@
 **Created:** 2026-11-18
 **Last edited:** 2026-11-18
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `56e9972` feat: match the budget rows to the figma spacing and archive add-budgets
 **Branch:** `main`, parent `e3e407f`
 **OpenSpec change:** `add-budgets` (MVP 3) and `redesign-wallets-page`, closing both
 **Trigger:** The developer asked to close MVP 3 and refine the Budget page to the Figma Make Budget section (`SqCtFlkW2pwTXgwnAeHSdb`), and archived `redesign-wallets-page` with `/opsx:archive`.

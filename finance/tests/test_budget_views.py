@@ -54,6 +54,12 @@ class BudgetViewTestCase(TestCase):
 
 
 class BudgetPageTests(BudgetViewTestCase):
+    def test_modal_target_present_with_and_without_plan(self):
+        # Every hx-target="#modal-root" link needs the element on the page, or the modal never opens.
+        self.assertContains(self.client.get(self.page), '<div id="modal-root"></div>', html=True)
+        self.limit(self.food, 2_400_000)
+        self.assertContains(self.client.get(self.page), '<div id="modal-root"></div>', html=True)
+
     def test_empty_state_without_copy(self):
         response = self.client.get(self.page)
         self.assertContains(response, "Set monthly plan")
