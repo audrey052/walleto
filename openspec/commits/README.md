@@ -25,7 +25,8 @@ One Markdown record per commit, describing what the commit built, why, which fil
 | 17 | `05a739d` | [add-transactions-wrap-up.md](add-transactions-wrap-up.md) | 2 |
 | 18 | `90c528b` | [transactions-figma-table-and-csv.md](transactions-figma-table-and-csv.md) | 2 |
 | 19 | `00e39c5` | [transactions-summary-income-expenses.md](transactions-summary-income-expenses.md) | 2 |
-| 20 | this commit | [restore-transactions-template.md](restore-transactions-template.md) | 2 |
+| 20 | `511cfd4` | [restore-transactions-template.md](restore-transactions-template.md) | 2 |
+| 21 | this commit | [archive-add-transactions.md](archive-add-transactions.md) | 2 |
 
 Commits made before MVP 0's code (`git init`, `.gitignore`, OpenSpec init) have no record.
 

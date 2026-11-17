@@ -2,7 +2,7 @@
 
 Implementation log for this change: what was created or modified, and where the result differs from `proposal.md`, `design.md` and `tasks.md`. Per-commit detail is in `openspec/commits/`.
 
-- **Status:** implemented, not archived yet (open: task 6.1 real-browser check)
+- **Status:** implemented and archived (2026-11-17)
 - **Date:** 2026-11-17
 - **Tests:** 155 passing in about 3 s; 65 of them new (14 balance and model, 41 activity, 10 demo)
 - **Validation:** `openspec validate add-transactions --strict` passes
@@ -18,7 +18,7 @@ Implementation log for this change: what was created or modified, and where the 
 | `05a739d` | feat: complete the add-transactions change log | `add-transactions-wrap-up.md` |
 | `90c528b` | feat: match the transactions page to the figma table and add csv export | `transactions-figma-table-and-csv.md` |
 | `00e39c5` | fix: show only income and expenses in the transactions summary | `transactions-summary-income-expenses.md` |
-| this commit | fix: restore the transactions template broken by html formatting | `restore-transactions-template.md` |
+| `511cfd4` | fix: restore the transactions template broken by html formatting | `restore-transactions-template.md` |
 
 ## Routes
 
@@ -103,5 +103,4 @@ Migration: `finance.0003_transactions_and_transfers`. Wallet balance is now `ini
 
 ## Open items before archiving
 
-1. Task 6.1: in a real browser, try the demo account; on Transactions, change month, filter by wallet and category, search, page through, add/edit/delete a transaction and a transfer; on Wallets, use Transfer and View activity; check at phone width.
-2. Then run `openspec archive add-transactions`.
+None. The developer archived the change with `openspec archive add-transactions`, which is taken as confirmation of the real-browser pass (task 6.1).

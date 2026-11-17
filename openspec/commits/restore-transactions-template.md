@@ -3,7 +3,7 @@
 **Created:** 2026-11-17
 **Last edited:** 2026-11-17
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `511cfd4` fix: restore the transactions template broken by html formatting
 **Branch:** `main`, parent `00e39c5`
 **OpenSpec change:** `add-transactions` (MVP 2), task 3.8
 **Trigger:** commit `00e39c5` was made while the test suite was failing (18 errors), because the commit step did not wait for the test result.
