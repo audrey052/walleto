@@ -2,7 +2,7 @@
 
 Implementation log for this change: what was created or modified, and where the result differs from `proposal.md`, `design.md` and `tasks.md`. Per-commit detail is in `openspec/commits/`.
 
-- **Status:** implemented and committed, not archived (open: task 7.2 real-browser check)
+- **Status:** implemented, archived 2026-11-18
 - **Date:** 2026-11-17
 - **Tests:** 214 passing in about 4 s; 59 of them new (22 model and calculation, 34 page / modal / privacy / warning, 3 demo)
 - **Validation:** `openspec validate add-budgets --strict` passes; `makemigrations --check` finds no changes
@@ -12,6 +12,7 @@ Implementation log for this change: what was created or modified, and where the 
 | Commit | Message | Record |
 |---|---|---|
 | `bb06f5c` | feat: add budgets with category limits, a proportional monthly plan and warnings | `add-budgets.md` |
+| this commit | feat: match the budget rows to the figma spacing and archive add-budgets | `archive-add-budgets.md` |
 
 The proposal, its revision to the hybrid model, and the implementation were made in one session and committed together.
 
@@ -68,6 +69,7 @@ The proposal, its revision to the hybrid model, and the implementation were made
 - **Remove limit asks first.** Design decision 6 planned `@require_POST` for removing a limit. It follows the transaction-delete pattern instead: GET shows a confirmation in the modal, and only POST removes. A GET still never changes data, so the spec holds.
 - **Over toast uses the error style.** The over message is sent at the error level so it shows in clay, as design decision 8 describes. The warning message uses the new amber `toast-warning`.
 - **Category modal title.** A category without a limit gets the title "Set a limit for <Category>"; one with a limit gets "Edit budget". The spec names only "Edit budget".
+- **Spacing refined after the first commit.** Category rows use the Figma values: 25px padding, a 180px name column, 120px amounts and a 35px percent column, 6px between name and status. On phones the bar starts under the name, as in Figma.
 - **Demo limits.** Instead of a total split by default shares and then nudged (design decision 9), limits come from each category's real spending in the first demo month plus 5%. This looks more like a person's own plan, and the "something to notice" rule is still checked by a test.
 
 ## Verification
@@ -78,5 +80,4 @@ The proposal, its revision to the hybrid model, and the implementation were made
 
 ## Open items before archiving
 
-- Task 7.2: check the Budget page in a real browser at desktop and phone width (headless screenshots done).
-- Then archive with `openspec archive add-budgets`.
+None. Task 7.2 was closed at the developer's request after the spacing refinement; the real-browser pass was left to the developer.

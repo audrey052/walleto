@@ -1,9 +1,9 @@
 # Redesign the Wallets Page After the Figma Table and Block Overdrawn Transfers
 
 **Created:** 2026-11-17
-**Last edited:** 2026-11-17
-**Status:** Implemented, with the real-browser check outstanding
-**Commit:** this commit
+**Last edited:** 2026-11-18
+**Status:** Implemented and archived (2026-11-18)
+**Commit:** `e3e407f` feat: redesign the wallets page after the figma table and block overdrawn transfers
 **Branch:** `main`, parent `bb06f5c`
 **OpenSpec change:** `redesign-wallets-page`, proposal and tasks 1.1–4.3
 **Trigger:** Developer request to make the Wallets page match the Figma Make Wallets screen (`SqCtFlkW2pwTXgwnAeHSdb`, `WalletsPage.tsx`, `wallets.css`), with STYLE.md copy, hover row actions, and transfers blocked above the source balance.

@@ -2,7 +2,7 @@
 
 Implementation log for this change: what was created or modified, and where the result differs from `proposal.md`, `design.md` and `tasks.md`. Per-commit detail is in `openspec/commits/`.
 
-- **Status:** implemented, not archived (open: real-browser check by the developer)
+- **Status:** implemented, archived 2026-11-18
 - **Date:** 2026-11-17
 - **Tests:** 235 passing in about 6 s; 22 new in `finance/tests/test_wallets_page.py`
 - **Validation:** `openspec validate redesign-wallets-page --strict` passes; `makemigrations --check` finds no changes
@@ -11,7 +11,7 @@ Implementation log for this change: what was created or modified, and where the 
 
 | Commit | Message | Record |
 |---|---|---|
-| this commit | feat: redesign the wallets page after the figma table and block overdrawn transfers | `redesign-wallets-page.md` |
+| `e3e407f` | feat: redesign the wallets page after the figma table and block overdrawn transfers | `redesign-wallets-page.md` |
 
 ## Routes
 
@@ -55,4 +55,4 @@ No new routes. `finance:wallets` gets a new layout and context; `finance:transfe
 
 ## Open items before archiving
 
-- Check the page in a real browser (hover icons, swap button, live summary, no-JavaScript fallback), then run `openspec archive redesign-wallets-page`.
+None. Archived at the developer's request; the real-browser pass was left to the developer.

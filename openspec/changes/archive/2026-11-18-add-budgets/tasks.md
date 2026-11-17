@@ -50,7 +50,7 @@
 ## 7. Wrap-up
 
 - [x] 7.1 Update docs/STYLE.md (85% line, category-colored progress, warning toast) and WORKPLAN.md MVP 3 to the chosen model (category limits + proportional plan, 85%)
-- [ ] 7.2 Check the Budget page at 1440px and 390px against docs/STYLE.md and the Figma Budget section, with the demo account (headless screenshots at 1440px and 390px done; developer to do a real-browser pass)
+- [x] 7.2 Check the Budget page at 1440px and 390px against docs/STYLE.md and the Figma Budget section, with the demo account (headless screenshots at 1440px and 390px; row spacing and column widths refined to the Figma values on 2026-11-18; closed at the developer's request)
 - [x] 7.3 Write `changes.md` and a record per commit in `openspec/commits/`
 - [x] 7.4 Update docs/decisions.md (category limits with proportional plan, default shares only for the first split, 85% line, warnings only on crossing) and run `python manage.py test` and `openspec validate add-budgets --strict`
 

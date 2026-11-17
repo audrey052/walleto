@@ -28,7 +28,8 @@ One Markdown record per commit, describing what the commit built, why, which fil
 | 20 | `511cfd4` | [restore-transactions-template.md](restore-transactions-template.md) | 2 |
 | 21 | `fc953ab` | [archive-add-transactions.md](archive-add-transactions.md) | 2 |
 | 22 | `bb06f5c` | [add-budgets.md](add-budgets.md) | 3 |
-| 23 | this commit | [redesign-wallets-page.md](redesign-wallets-page.md) | 1 (redesign) |
+| 23 | `e3e407f` | [redesign-wallets-page.md](redesign-wallets-page.md) | 1 (redesign) |
+| 24 | this commit | [archive-add-budgets.md](archive-add-budgets.md) | 3 |
 
 Commits made before MVP 0's code (`git init`, `.gitignore`, OpenSpec init) have no record.
 

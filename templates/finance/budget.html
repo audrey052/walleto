@@ -59,9 +59,9 @@
 
     {# One row per budgeted category, then the categories without a limit #}
     <section class="panel">
-      <div class="px-5 pt-6 pb-5 md:px-6">
+      <div class="px-5 pt-[22px] pb-[25px] md:px-[23px]">
         <h2 class="text-section font-semibold">A place for every Rupiah</h2>
-        <p class="mt-1 text-caption text-muted">Your category budgets add up to your monthly plan.</p>
+        <p class="mt-1.5 text-caption text-muted">Your category budgets add up to your monthly plan.</p>
       </div>
       <ul>
         {% for row in plan.rows %}
@@ -69,23 +69,23 @@
           <li class="cursor-pointer border-t border-[#f0efe9] transition-colors hover:bg-[#fdfdfa]"
               hx-get="{{ edit_url }}{{ month_query }}" hx-target="#modal-root">
             <a href="{{ edit_url }}{{ month_query }}" onclick="event.preventDefault()"
-               class="grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-2.5 px-5 py-5 md:flex md:gap-4 md:px-6"
+               class="grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-2.5 px-5 py-5 md:flex md:gap-4 md:p-[25px]"
                aria-label="Edit the {{ row.category.name }} budget">
               <span class="grid size-8 shrink-0 place-items-center rounded-[7px] border border-[#eeede6] bg-[#f8f7f2] text-[#8a8370]">{% icon row.category.icon size=17 %}</span>
-              <span class="min-w-0 md:w-48 md:shrink-0">
+              <span class="min-w-0 md:w-[180px] md:shrink-0">
                 <strong class="block truncate text-control font-semibold">{{ row.category.name }}</strong>
-                <span class="mt-0.5 block text-caption {% if row.status == 'over' %}text-clay{% elif row.status == 'warning' %}text-amber{% else %}text-muted{% endif %}">
+                <span class="mt-1.5 block text-caption {% if row.status == 'over' %}text-clay{% elif row.status == 'warning' %}text-amber{% else %}text-muted{% endif %}">
                   {% if row.status == "over" %}Over by {{ row.over_by|rupiah }}{% elif row.status == "warning" %}Getting close to your limit{% else %}A little breathing room{% endif %}
                 </span>
               </span>
               <span class="text-right md:order-last md:flex md:items-center md:gap-4">
-                <span class="block md:w-36">
+                <span class="block md:w-[120px]">
                   <strong class="block text-control font-semibold whitespace-nowrap">{{ row.spent|rupiah }}</strong>
-                  <span class="block text-caption whitespace-nowrap text-muted">of {{ row.limit|rupiah }}</span>
+                  <span class="mt-1 block text-caption whitespace-nowrap text-muted">of {{ row.limit|rupiah }}</span>
                 </span>
-                <span class="hidden w-10 text-caption md:block {% if row.status == 'over' %}text-clay{% elif row.status == 'warning' %}text-amber{% else %}text-secondary{% endif %}">{{ row.percent }}%</span>
+                <span class="hidden w-[35px] text-right text-caption md:block {% if row.status == 'over' %}text-clay{% elif row.status == 'warning' %}text-amber{% else %}text-secondary{% endif %}">{{ row.percent }}%</span>
               </span>
-              <span class="col-span-3 flex items-center gap-3 md:mx-5 md:flex-1">
+              <span class="col-span-3 ml-11 flex items-center gap-3 md:mx-5 md:ml-5 md:flex-1">
                 <span class="flex-1">{% include "components/progress.html" with percent=row.percent color=row.category.color label=row.category.name %}</span>
                 <span class="text-caption md:hidden {% if row.status == 'over' %}text-clay{% elif row.status == 'warning' %}text-amber{% else %}text-secondary{% endif %}">{{ row.percent }}%</span>
               </span>
@@ -94,11 +94,11 @@
         {% endfor %}
         {% for row in plan.unbudgeted %}
           {% url 'finance:budget_category' row.category.pk as edit_url %}
-          <li class="flex items-center gap-3 border-t border-[#f0efe9] px-5 py-4 md:gap-4 md:px-6">
+          <li class="flex items-center gap-3 border-t border-[#f0efe9] px-5 py-5 md:gap-4 md:px-[25px]">
             <span class="grid size-8 shrink-0 place-items-center rounded-[7px] border border-[#eeede6] bg-[#f8f7f2] text-[#b3ad9c]">{% icon row.category.icon size=17 %}</span>
             <span class="min-w-0 flex-1">
               <strong class="block truncate text-control font-medium text-secondary">{{ row.category.name }}</strong>
-              <span class="mt-0.5 block text-caption text-muted">No limit set{% if row.spent %} · {{ row.spent|rupiah }} spent{% endif %}</span>
+              <span class="mt-1.5 block text-caption text-muted">No limit set{% if row.spent %} · {{ row.spent|rupiah }} spent{% endif %}</span>
             </span>
             <a href="{{ edit_url }}{{ month_query }}" class="btn-text shrink-0"
                hx-get="{{ edit_url }}{{ month_query }}" hx-target="#modal-root">{% icon "plus" size=15 %} Set limit</a>

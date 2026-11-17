@@ -1,8 +1,8 @@
 # Add Budgets with Category Limits, a Proportional Monthly Plan and Warnings
 
 **Created:** 2026-11-17
-**Last edited:** 2026-11-17
-**Status:** Implemented, with task 7.2 (real-browser pass) outstanding
+**Last edited:** 2026-11-18
+**Status:** Implemented and archived (2026-11-18)
 **Commit:** `bb06f5c` feat: add budgets with category limits, a proportional monthly plan and warnings
 **Branch:** `main`, parent `fc953ab`
 **OpenSpec change:** `add-budgets` (MVP 3), proposal and tasks 1.1–7.4 except 7.2
