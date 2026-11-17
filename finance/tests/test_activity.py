@@ -371,13 +371,13 @@ class TransferCrudTests(ActivityTestCase):
 
 
 class WalletsPageActivityTests(ActivityTestCase):
-    def test_cards_show_real_balance_and_activity_link(self):
+    def test_rows_show_real_balance_and_activity_link(self):
         self.tx("GoFood", 67_500)
         response = self.client.get(reverse("finance:wallets"))
         balances = {w.name: w.balance for w in response.context["wallets"]}
         self.assertEqual(balances, {"BCA": 1_000_000, "GoPay": -67_500})
         self.assertContains(response, f"{self.url}?wallet={self.gopay.pk}")
-        self.assertContains(response, "Rp</span>67.500")
+        self.assertContains(response, "−Rp67.500")
         self.assertContains(response, "Transfer")
 
     def test_archived_wallet_history_stays_visible(self):

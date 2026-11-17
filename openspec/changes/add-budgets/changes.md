@@ -11,7 +11,7 @@ Implementation log for this change: what was created or modified, and where the 
 
 | Commit | Message | Record |
 |---|---|---|
-| this commit | feat: add budgets with category limits, a proportional monthly plan and warnings | `add-budgets.md` |
+| `bb06f5c` | feat: add budgets with category limits, a proportional monthly plan and warnings | `add-budgets.md` |
 
 The proposal, its revision to the hybrid model, and the implementation were made in one session and committed together.
 

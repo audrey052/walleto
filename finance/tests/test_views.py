@@ -31,7 +31,7 @@ class WalletListTests(WalletTestCase):
         self.assertContains(response, "Add your first wallet")
         self.assertNotContains(response, "Total balance")
 
-    def test_total_and_cards_of_active_wallets(self):
+    def test_total_and_rows_of_active_wallets(self):
         self.wallet("BCA", 7842500)
         self.wallet("GoPay", 647500, type="ewallet")
         self.wallet("Cash", 485000, type="cash")
@@ -40,7 +40,7 @@ class WalletListTests(WalletTestCase):
         self.assertEqual(response.context["total_balance"], 8975000)
         self.assertContains(response, "Rp</span>8.975.000")
         self.assertEqual([w.name for w in response.context["wallets"]], ["BCA", "GoPay", "Cash"])
-        self.assertContains(response, "Across 3 active wallets")
+        self.assertContains(response, "Across 3 wallets")
         self.assertContains(response, "Archived wallets (1)")
 
     def test_shows_only_own_wallets(self):
@@ -51,10 +51,9 @@ class WalletListTests(WalletTestCase):
         self.assertNotContains(response, "Mandiri")
         self.assertEqual(response.context["total_balance"], 100)
 
-    def test_monogram_and_type_label_rendered(self):
+    def test_type_label_rendered(self):
         self.wallet("Dompet", type="cash")
         response = self.client.get(self.list_url)
-        self.assertContains(response, ">Rp</span>")
         self.assertContains(response, "Cash")
 
     def test_wallets_is_the_active_section_on_every_wallet_page(self):

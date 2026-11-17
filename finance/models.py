@@ -6,7 +6,7 @@ from django.db.models import F, OuterRef, Q, Subquery, Sum
 from django.db.models.functions import Coalesce, Lower
 from django.utils import timezone
 
-# Muted monogram colors taken from the Figma wallet cards (design.md decision 6).
+# Muted wallet colors from the Figma design (add-wallets design decision 6); used for the wallet dots.
 WALLET_COLORS = ["#426050", "#597D73", "#8D826E", "#A39C87", "#1F5C4A"]
 
 
@@ -93,21 +93,6 @@ class Wallet(models.Model):
             count = Wallet.objects.filter(user_id=self.user_id).count()
             self.color = WALLET_COLORS[count % len(WALLET_COLORS)]
         super().save(*args, **kwargs)
-
-    @property
-    def monogram(self):
-        """Short label for the wallet tile (wallets spec, "Wallet monogram")."""
-        if self.type == self.Type.CASH:
-            return "Rp"
-        words = self.name.split()
-        if not words:
-            return "?"
-        if len(words) >= 2:
-            return (words[0][0] + words[1][0]).upper()
-        word = words[0]
-        if len(word) <= 4:
-            return word.upper()
-        return word[0].upper() + word[1].lower()
 
     def archive(self):
         self.is_archived = True

@@ -3,7 +3,7 @@
 **Created:** 2026-11-17
 **Last edited:** 2026-11-17
 **Status:** Implemented, with task 7.2 (real-browser pass) outstanding
-**Commit:** this commit
+**Commit:** `bb06f5c` feat: add budgets with category limits, a proportional monthly plan and warnings
 **Branch:** `main`, parent `fc953ab`
 **OpenSpec change:** `add-budgets` (MVP 3), proposal and tasks 1.1–7.4 except 7.2
 **Trigger:** WORKPLAN MVP 3 and the Figma Make Budget section (`SqCtFlkW2pwTXgwnAeHSdb`); the developer chose the hybrid model (per-category limits plus a proportional "Edit monthly plan"), the 85% warning line, and all WORKPLAN extras.

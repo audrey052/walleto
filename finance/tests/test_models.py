@@ -15,19 +15,6 @@ class WalletModelTests(TestCase):
     def setUp(self):
         self.user = make_user()
 
-    def test_monograms_follow_the_spec(self):
-        cases = [
-            ("BCA", Wallet.Type.BANK, "BCA"),
-            ("OVO", Wallet.Type.EWALLET, "OVO"),
-            ("Jago", Wallet.Type.BANK, "JAGO"),
-            ("Bank Jago", Wallet.Type.BANK, "BJ"),
-            ("GoPay", Wallet.Type.EWALLET, "Go"),
-            ("Dompet", Wallet.Type.CASH, "Rp"),
-        ]
-        for name, kind, expected in cases:
-            with self.subTest(name=name):
-                self.assertEqual(Wallet(name=name, type=kind).monogram, expected)
-
     def test_colors_are_assigned_in_turn(self):
         wallets = [
             Wallet.objects.create(user=self.user, name=f"Wallet {i}")

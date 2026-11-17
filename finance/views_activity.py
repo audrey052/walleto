@@ -288,7 +288,24 @@ def _own_transfer(request, pk):
     )
 
 
-def _transfer_form(request, form, *, title, action, submit_label, delete_url=None):
+def _transfer_wallets(form, original=None):
+    """{id: {name, balance}} for the live preview (transfers spec, "Transfer preview").
+
+    When editing, the balances are shown as they were before this transfer, so the
+    preview and the server's overdraft check agree.
+    """
+    wallets = form.fields["from_wallet"].queryset.with_balance()
+    data = {str(w.pk): {"name": w.name, "balance": w.balance} for w in wallets}
+    if original:
+        source, target, amount = original
+        if str(source) in data:
+            data[str(source)]["balance"] += amount
+        if str(target) in data:
+            data[str(target)]["balance"] -= amount
+    return data
+
+
+def _transfer_form(request, form, *, title, action, submit_label, delete_url=None, original=None):
     enough = form.has_enough_wallets
     return render_form(
         request,
@@ -304,6 +321,10 @@ def _transfer_form(request, form, *, title, action, submit_label, delete_url=Non
             "enough_wallets": enough,
             "next": safe_next(request, ""),
             "cancel_url": safe_next(request, reverse("finance:transactions")),
+            "transfer_wallets": _transfer_wallets(form, original) if enough else {},
+            "form_x_data": "transferForm" if enough else "",
+            "submit_x_text": "" if original else "submitLabel",
+            "submit_x_disabled": "insufficient" if enough else "",
         },
     )
 
@@ -322,6 +343,7 @@ def transfer_create(request):
 
 def transfer_edit(request, pk):
     record = _own_transfer(request, pk)
+    original = (record.from_wallet_id, record.to_wallet_id, record.amount)
     form = TransferForm(request.POST or None, instance=record, user=request.user)
     if request.method == "POST" and form.is_valid():
         record = form.save()
@@ -330,7 +352,7 @@ def transfer_edit(request, pk):
     return _transfer_form(
         request, form, title="Edit transfer",
         action=reverse("finance:transfer_edit", args=[pk]), submit_label="Save changes",
-        delete_url=reverse("finance:transfer_delete", args=[pk]),
+        delete_url=reverse("finance:transfer_delete", args=[pk]), original=original,
     )
 
 

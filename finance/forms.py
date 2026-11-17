@@ -11,6 +11,7 @@ DUPLICATE_NAME = "You already have a wallet with this name."
 AMOUNT_POSITIVE = "Amount must be greater than 0."
 FUTURE_DATE = "Date can't be in the future."
 SAME_WALLET = "Choose two different wallets."
+NOT_ENOUGH = "Not enough in {name}. Choose another wallet or a smaller amount."
 
 
 def _style(form):
@@ -153,7 +154,17 @@ class TransferForm(_DateNotInFuture, forms.ModelForm):
             field.empty_label = "Choose a wallet"
         if not self.instance.pk and not self.is_bound:
             self.initial.setdefault("date", timezone.localdate())
+            # Start with the first two active wallets, as the Figma transfer modal does.
+            first_two = list(Wallet.objects.for_user(user).active().values_list("pk", flat=True)[:2])
+            if len(first_two) == 2:
+                self.initial.setdefault("from_wallet", first_two[0])
+                self.initial.setdefault("to_wallet", first_two[1])
         _style(self)
+        # Large amount box from the Figma transfer modal; the box itself is drawn by the template.
+        self.fields["amount"].widget.attrs.update({
+            "class": "h-[53px] w-full min-w-0 bg-transparent text-[27px] font-medium tracking-[-0.8px] text-forest tabular-nums outline-none placeholder:text-placeholder",
+            "placeholder": "0",
+        })
 
     @property
     def has_enough_wallets(self):
@@ -170,6 +181,15 @@ class TransferForm(_DateNotInFuture, forms.ModelForm):
         source, target = cleaned.get("from_wallet"), cleaned.get("to_wallet")
         if source and target and source == target:
             self.add_error("to_wallet", SAME_WALLET)
+        amount = cleaned.get("amount")
+        if source and amount and not self.has_error("to_wallet"):
+            # transfers spec, "A transfer can't overdraw its source". In clean() the
+            # instance still holds the saved values, so an edit can add back its own amount.
+            available = Wallet.objects.with_balance().get(pk=source.pk).balance
+            if self.instance.pk and self.instance.from_wallet_id == source.pk:
+                available += self.instance.amount
+            if amount > available:
+                self.add_error("amount", NOT_ENOUGH.format(name=source.name))
         # Model constraints skip fields that already have errors, so the
         # database's same-wallet check never adds a second, less friendly message.
         return cleaned

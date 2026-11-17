@@ -1,12 +1,18 @@
+from datetime import timedelta
+
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from core.htmx import redirect_after_save, render_form
 
 from .forms import WalletForm
-from .models import Wallet
+from .history import balance_history
+from .models import Transfer, Wallet
+
+HISTORY_DAYS = 30
 
 
 def _own_wallet(request, pk):
@@ -15,14 +21,34 @@ def _own_wallet(request, pk):
 
 
 def wallet_list(request):
-    wallets = Wallet.objects.for_user(request.user)
+    user = request.user
+    today = timezone.localdate()
+    wallets = Wallet.objects.for_user(user)
+    active = list(wallets.active().with_balance())
+    history = balance_history(active, today)
+    for wallet in active:
+        wallet.history = history[wallet.pk]
+    # Balance by type (wallets spec, "Balance by wallet type"); a type with no wallets is Rp0.
+    breakdown = [
+        {"label": label, "total": sum(w.balance for w in active if w.type == kind)}
+        for kind, label in (
+            (Wallet.Type.BANK, "Bank accounts"),
+            (Wallet.Type.EWALLET, "E-wallets"),
+            (Wallet.Type.CASH, "Cash"),
+        )
+    ]
     return render(
         request,
         "finance/wallets.html",
         {
-            "wallets": wallets.active().with_balance(),
+            "wallets": active,
             "archived_wallets": wallets.archived().with_balance().order_by("-archived_at"),
-            "total_balance": wallets.active().total_balance(),
+            "total_balance": sum(w.balance for w in active),
+            "breakdown": breakdown,
+            "today": today,
+            "history_start": today - timedelta(days=HISTORY_DAYS - 1),
+            "recent_transfers": Transfer.objects.for_user(user).select_related("from_wallet", "to_wallet")[:3],
+            "can_transfer": len(active) >= 2,
         },
     )
 

@@ -17,7 +17,7 @@ from .models import MIN_CATEGORY_LIMIT, Budget, Category, Transaction, Transfer,
 DEMO_EMAIL = "demo@walleto.app"
 DEMO_NAME = "Aditya Ramadhan"
 
-# name, type, starting balance (in creation order, which sets the monogram colors)
+# name, type, starting balance (in creation order, which sets the wallet colors)
 WALLETS = [
     ("BCA", Wallet.Type.BANK, 4_250_000),
     ("GoPay", Wallet.Type.EWALLET, 85_000),

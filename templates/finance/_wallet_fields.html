@@ -1,8 +1,17 @@
-{% if form.non_field_errors %}
-  <div class="rounded-control border border-clay/30 bg-clay/5 px-3.5 py-3 text-control text-clay" role="alert">
-    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+{# Wallet form body. The preview card (Figma .new-account-preview) follows the name and type as they are typed. #}
+<div class="flex flex-col gap-4" x-data="walletPreview" @input="sync()" @change="sync()">
+  <div class="flex items-center gap-3 rounded-[6px] border border-border bg-paper p-[15px]" x-cloak x-show="true" aria-hidden="true">
+    <div class="min-w-0">
+      <strong class="block text-control font-semibold break-words" x-text="name || '{% if form.instance.pk %}{{ form.instance.name|escapejs }}{% else %}Your new wallet{% endif %}'"></strong>
+      <p class="mt-[5px] text-caption text-muted" x-text="type"></p>
+    </div>
   </div>
-{% endif %}
-{% include "components/field.html" with field=form.name %}
-{% include "components/field.html" with field=form.type %}
-{% include "components/field.html" with field=form.initial_balance %}
+  {% if form.non_field_errors %}
+    <div class="rounded-control border border-clay/30 bg-clay/5 px-3.5 py-3 text-control text-clay" role="alert">
+      {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+    </div>
+  {% endif %}
+  {% include "components/field.html" with field=form.name %}
+  {% include "components/field.html" with field=form.type %}
+  {% include "components/field.html" with field=form.initial_balance %}
+</div>

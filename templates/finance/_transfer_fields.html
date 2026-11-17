@@ -1,21 +1,76 @@
+{% load icons %}
+{# Transfer modal body, laid out like the Figma transfer modal (WalletsPage.tsx).                    #}
+{# The live parts (balances, summary, swap) need Alpine (transferForm in static/js/app.js); they are #}
+{# x-cloak'ed, so without JavaScript this is a plain form and the server does every check.          #}
 {% if not enough_wallets %}
   <p class="text-body text-secondary">
     A transfer needs two wallets, for example BCA and GoPay.
     <a href="{% url 'finance:wallets' %}" class="btn-text">Add another wallet</a> first.
   </p>
 {% else %}
+  {{ transfer_wallets|json_script:"transfer-wallets" }}
   {% if form.non_field_errors %}
     <div class="rounded-control border border-clay/30 bg-clay/5 px-3.5 py-3 text-control text-clay" role="alert">
       {% for error in form.non_field_errors %}{{ error }}{% endfor %}
     </div>
   {% endif %}
-  <div class="grid gap-4 sm:grid-cols-2">
-    {% include "components/field.html" with field=form.from_wallet %}
-    {% include "components/field.html" with field=form.to_wallet %}
+
+  {# From | swap | To #}
+  <div class="grid grid-cols-[minmax(0,1fr)_28px_minmax(0,1fr)] items-start gap-2">
+    {% for field in form %}{% if field.name == "from_wallet" or field.name == "to_wallet" %}
+      {% if field.name == "to_wallet" %}
+        <button type="button" class="btn-icon mt-[27px] size-7" x-cloak x-show="true" @click="swap()"
+                aria-label="Swap source and destination" title="Swap">{% icon "transactions" size=18 %}</button>
+      {% endif %}
+      <div class="field min-w-0 {% if field.errors %}field-invalid{% endif %} {% if field.name == 'to_wallet' %}col-start-3{% endif %}">
+        <label class="field-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        {% if field.name == "from_wallet" %}
+          <span class="text-caption whitespace-nowrap text-muted" x-cloak x-show="source">
+            Available <strong class="font-medium text-secondary tabular-nums" x-text="source && money(source.balance)"></strong>
+          </span>
+        {% else %}
+          <span class="text-caption whitespace-nowrap text-muted" x-cloak x-show="target">
+            Current balance <strong class="font-medium text-secondary tabular-nums" x-text="target && money(target.balance)"></strong>
+          </span>
+        {% endif %}
+      </div>
+    {% endif %}{% endfor %}
   </div>
+
+  {# Large amount box #}
+  <div class="field {% if form.amount.errors %}field-invalid{% endif %}">
+    <label class="field-label" for="{{ form.amount.id_for_label }}">{{ form.amount.label }}</label>
+    <div class="flex h-[57px] items-center rounded-[6px] border pl-3.5 focus-within:outline-2 focus-within:outline-offset-[3px] focus-within:outline-forest {% if form.amount.errors %}border-clay{% else %}border-border{% endif %}"
+         :class="insufficient ? 'border-clay' : ''">
+      <span class="mr-1 text-[15px] text-muted">Rp</span>
+      {{ form.amount }}
+    </div>
+    {% for error in form.amount.errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}
+    <p class="field-error" role="alert" x-cloak x-show="insufficient && {{ form.amount.errors|yesno:'false,true' }}">
+      Not enough in <span x-text="source && source.name"></span>. Choose another wallet or a smaller amount.
+    </p>
+  </div>
+
   <div class="grid gap-4 sm:grid-cols-2">
-    {% include "components/field.html" with field=form.amount %}
     {% include "components/field.html" with field=form.date %}
+    {% include "components/field.html" with field=form.note %}
   </div>
-  {% include "components/field.html" with field=form.note %}
+
+  {# After-transfer summary #}
+  <div class="rounded-[6px] border border-border bg-paper p-[15px]" x-cloak x-show="source && target && from !== to">
+    <div class="flex items-center justify-between gap-3 pb-[11px] text-control text-secondary">
+      <span><span x-text="source && source.name"></span> after transfer</span>
+      <strong class="font-semibold tabular-nums" :class="insufficient ? 'text-clay' : 'text-ink'"
+              x-text="source && money(source.balance - amount)"></strong>
+    </div>
+    <div class="flex items-center justify-between gap-3 pb-[11px] text-control text-secondary">
+      <span><span x-text="target && target.name"></span> after transfer</span>
+      <strong class="font-semibold text-ink tabular-nums" x-text="target && money(target.balance + amount)"></strong>
+    </div>
+    <p class="flex items-center gap-1.5 border-t border-border pt-3 text-caption text-forest">
+      {% icon "check" size=12 %} Your total balance stays the same.
+    </p>
+  </div>
 {% endif %}
