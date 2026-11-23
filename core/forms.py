@@ -30,6 +30,9 @@ class AmountField(forms.CharField):
     def widget_attrs(self, widget):
         attrs = super().widget_attrs(widget)
         attrs.update({"inputmode": "numeric", "autocomplete": "off"})
+        if not self.allow_negative:
+            # static/js/app.js adds the dot separators while typing (2000000 -> 2.000.000).
+            attrs["data-money"] = ""
         return attrs
 
     def to_python(self, value):

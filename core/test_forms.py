@@ -56,3 +56,10 @@ class AmountFieldTests(SimpleTestCase):
     def test_redisplay_uses_dot_separators(self):
         self.assertEqual(AmountField().prepare_value(2500000), "2.500.000")
         self.assertEqual(AmountField().prepare_value("abc"), "abc")
+
+    def test_marked_for_live_separators(self):
+        # static/js/app.js formats inputs with data-money while typing.
+        attrs = AmountField().widget_attrs(forms.TextInput())
+        self.assertIn("data-money", attrs)
+        self.assertEqual(attrs["inputmode"], "numeric")
+        self.assertNotIn("data-money", AmountField(allow_negative=True).widget_attrs(forms.TextInput()))

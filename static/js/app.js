@@ -134,3 +134,29 @@ document.addEventListener("alpine:init", () => {
     },
   }));
 });
+
+// Money inputs (AmountField, `data-money`): add dot separators while typing,
+// 2000000 -> 2.000.000, keeping the caret after the same digit. Runs in the
+// capture phase, so Alpine previews listening on the form read the formatted value.
+// The server parses "2.000.000" either way, so without JavaScript nothing breaks.
+document.addEventListener(
+  "input",
+  (event) => {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement) || !input.hasAttribute("data-money")) return;
+    const caret = input.selectionStart ?? input.value.length;
+    const digitsBeforeCaret = input.value.slice(0, caret).replace(/\D/g, "").replace(/^0+(?=\d)/, "").length;
+    const digits = input.value.replace(/\D/g, "").replace(/^0+(?=\d)/, "").slice(0, 15);
+    const formatted = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    if (formatted === input.value) return;
+    input.value = formatted;
+    // Put the caret back after the same number of digits.
+    let position = 0;
+    for (let seen = 0; position < formatted.length && seen < digitsBeforeCaret; position++) {
+      if (/\d/.test(formatted[position])) seen++;
+    }
+    input.setSelectionRange(position, position);
+  },
+  true,
+);
+

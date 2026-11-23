@@ -3,7 +3,7 @@
 **Created:** 2026-11-23
 **Last edited:** 2026-11-23
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `c699a64` fix: show examples in placeholders without e.g.
 **Branch:** `main`, parent `680acc6`
 **OpenSpec change:** none (copy change across existing forms)
 **Trigger:** The developer asked for placeholders to show the example directly, without "e.g.".
