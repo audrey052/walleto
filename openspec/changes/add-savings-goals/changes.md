@@ -14,7 +14,8 @@ This is the implementation log for this change. It lists what was created or mod
 
 | Commit | Message | Record |
 |---|---|---|
-| this commit | feat: add savings goals that move money out of wallets, with progress, status and a detail chart | `add-savings-goals.md` |
+| `b8ac963` | feat: add savings goals that move money out of wallets, with progress, status and a detail chart | `add-savings-goals.md` |
+| this commit | fix: show the new goal button only once a goal exists | `goals-single-create-button.md` |
 
 ## Routes
 
@@ -89,6 +90,7 @@ This is the implementation log for this change. It lists what was created or mod
 - **The spec's "On track" scenario had wrong arithmetic.** It said Rp2.000.000 saved on day 78 of 90 of a Rp3.000.000 goal is on track. 2.000.000 × 90 < 3.000.000 × 78, so that goal is behind. The first calculation test caught it. The scenario now uses Rp2.700.000, and "Behind" uses the same goal with Rp2.500.000.
 - **Wallet balances are shown in the wallet dropdown** ("BCA · Rp7.842.500") instead of a separate list in the modal.
 - **The main card's right column shows the percent** where Figma shows the decorative "01". The goal's start date replaces "SMALL STEPS. REAL PROGRESS." (docs/STYLE.md copy rules).
+- **"New goal" in the heading only appears once there is an active goal.** With no goals, the empty state's "Create a goal" is the only create button (developer request after the first commit).
 - **The main card has a "View history" link** next to "Edit goal", so the detail page is reachable from the card. The goal name links there too.
 
 ## Verification

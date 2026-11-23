@@ -10,8 +10,11 @@
       <h1>Savings goals</h1>
       <p class="mt-1.5 text-body text-secondary">{{ active_section.subtitle }}</p>
     </div>
-    <a href="{% url 'finance:goal_create' %}" class="btn btn-primary self-start sm:self-auto"
-       hx-get="{% url 'finance:goal_create' %}" hx-target="#modal-root">{% icon "plus" size=16 %} New goal</a>
+    {# Without an active goal the empty state offers "Create a goal", so the heading button would repeat it. #}
+    {% if main %}
+      <a href="{% url 'finance:goal_create' %}" class="btn btn-primary self-start sm:self-auto"
+         hx-get="{% url 'finance:goal_create' %}" hx-target="#modal-root">{% icon "plus" size=16 %} New goal</a>
+    {% endif %}
   </div>
 
   {% if main %}

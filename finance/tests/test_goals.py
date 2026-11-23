@@ -420,6 +420,10 @@ class GoalPageTests(GoalTestCase):
     def test_no_goals(self):
         response = self.page()
         self.assertContains(response, "Create a goal")
+        # One create button only: the heading's "New goal" appears once a goal exists.
+        self.assertNotContains(response, "New goal")
+        self.goal()
+        self.assertContains(self.page(), "New goal")
         self.assertIsNone(response.context["main"])
         self.assertContains(response, '<div id="modal-root"></div>', html=True)
 
@@ -459,6 +463,7 @@ class GoalPageTests(GoalTestCase):
         self.assertContains(response, "Completed")
         self.assertContains(response, "Reopen")
         self.assertContains(response, "Create a goal")
+        self.assertNotContains(response, "New goal")
 
     def test_goal_without_deadline_has_no_status_or_monthly_amount(self):
         self.goal(name="Emergency fund", deadline=None)

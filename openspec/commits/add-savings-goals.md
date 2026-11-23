@@ -3,7 +3,7 @@
 **Created:** 2026-11-23
 **Last edited:** 2026-11-23
 **Status:** Implemented, with the developer's real-browser check outstanding
-**Commit:** this commit
+**Commit:** `b8ac963` feat: add savings goals that move money out of wallets, with progress, status and a detail chart
 **Branch:** `main`, parent `99af433`
 **OpenSpec change:** `add-savings-goals` (MVP 4), proposal and tasks 1.1–8.2
 **Trigger:** WORKPLAN MVP 4 and the Figma Make Savings goals section (`SqCtFlkW2pwTXgwnAeHSdb`). The developer agreed that:

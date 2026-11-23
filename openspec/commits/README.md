@@ -31,7 +31,8 @@ One Markdown record per commit, describing what the commit built, why, which fil
 | 23 | `e3e407f` | [redesign-wallets-page.md](redesign-wallets-page.md) | 1 (redesign) |
 | 24 | `56e9972` | [archive-add-budgets.md](archive-add-budgets.md) | 3 |
 | 25 | `99af433` | [fix-budget-modal-root.md](fix-budget-modal-root.md) | 3 (fix) |
-| 26 | this commit | [add-savings-goals.md](add-savings-goals.md) | 4 |
+| 26 | `b8ac963` | [add-savings-goals.md](add-savings-goals.md) | 4 |
+| 27 | this commit | [goals-single-create-button.md](goals-single-create-button.md) | 4 (fix) |
 
 Commits made before MVP 0's code (`git init`, `.gitignore`, OpenSpec init) have no record.
 
