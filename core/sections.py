@@ -46,7 +46,9 @@ SECTIONS = [
         "title": "Savings goals",
         "subtitle": "Track progress toward what you're saving for.",
         "icon": "goal",
-        "url_name": "core:savings",
+        "url_name": "finance:goals",
+        # Every goal view: list, detail, create, edit, deposit, withdraw, delete (add-savings-goals).
+        "match": "finance:goal",
     },
     {
         "key": "assistant",

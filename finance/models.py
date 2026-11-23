@@ -21,7 +21,8 @@ class WalletQuerySet(models.QuerySet):
         return self.filter(is_archived=True)
 
     def with_balance(self):
-        """Annotate `balance` = starting balance + income - expenses + transfers in - transfers out.
+        """Annotate `balance` = starting balance + income - expenses + transfers in - transfers out
+        - goal deposits + goal withdrawals (add-savings-goals design decision 3).
 
         Each part is a correlated subquery (design.md decision 3): summing over
         joined transactions and transfers in one query would multiply rows.
@@ -34,6 +35,9 @@ class WalletQuerySet(models.QuerySet):
         wallet_tx = Transaction.objects.filter(wallet=OuterRef("pk")).annotate(_group=F("wallet"))
         transfers_in = Transfer.objects.filter(to_wallet=OuterRef("pk")).annotate(_group=F("to_wallet"))
         transfers_out = Transfer.objects.filter(from_wallet=OuterRef("pk")).annotate(_group=F("from_wallet"))
+        # Every movement counts, including completed and deleted goals: a completed goal's money
+        # was used, and a deleted goal holds Rp0 (design decisions 2 and 3).
+        goal_moves = GoalContribution.objects.filter(wallet=OuterRef("pk")).annotate(_group=F("wallet"))
 
         return self.annotate(
             balance=F("initial_balance")
@@ -41,6 +45,8 @@ class WalletQuerySet(models.QuerySet):
             - total(wallet_tx.filter(kind=Category.Kind.EXPENSE))
             + total(transfers_in)
             - total(transfers_out)
+            - total(goal_moves.filter(kind=GoalContribution.Kind.DEPOSIT))
+            + total(goal_moves.filter(kind=GoalContribution.Kind.WITHDRAWAL))
         )
 
     def total_balance(self):
@@ -343,3 +349,140 @@ class Budget(models.Model):
     def save(self, *args, **kwargs):
         self.month = self.month.replace(day=1)
         super().save(*args, **kwargs)
+
+
+MIN_GOAL_TARGET = 1_000
+
+
+class GoalQuerySet(models.QuerySet):
+    def for_user(self, user):
+        """The user's goals; deleted goals are hidden everywhere (add-savings-goals design decision 2)."""
+        return self.filter(user=user, deleted_at__isnull=True)
+
+    def active(self):
+        return self.filter(completed_at__isnull=True)
+
+    def completed(self):
+        return self.filter(completed_at__isnull=False)
+
+    def with_saved(self):
+        """Annotate `saved` = deposits - withdrawals, as one correlated subquery."""
+        sums = (
+            GoalContribution.objects.filter(goal=OuterRef("pk"))
+            .order_by()
+            .values("goal")
+            .annotate(
+                total=Sum(
+                    models.Case(
+                        models.When(kind=GoalContribution.Kind.DEPOSIT, then=F("amount")),
+                        default=-F("amount"),
+                        output_field=models.BigIntegerField(),
+                    )
+                )
+            )
+            .values("total")
+        )
+        return self.annotate(saved=Coalesce(Subquery(sums, output_field=models.BigIntegerField()), 0))
+
+
+class SavingsGoal(models.Model):
+    """Something the user saves toward (savings-goals spec).
+
+    The saved amount is never stored: it is the goal's deposits minus its
+    withdrawals (add-savings-goals design decision 1).
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="savings_goals"
+    )
+    name = models.CharField(max_length=40)
+    target = models.BigIntegerField()
+    deadline = models.DateField(null=True, blank=True)
+    start_date = models.DateField()
+    is_main = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = GoalQuerySet.as_manager()
+
+    class Meta:
+        ordering = ["created_at", "id"]
+        constraints = [
+            models.CheckConstraint(condition=Q(target__gte=MIN_GOAL_TARGET), name="goal_target_minimum"),
+        ]
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def is_completed(self):
+        return self.completed_at is not None
+
+    @property
+    def is_deleted(self):
+        return self.deleted_at is not None
+
+
+class GoalContributionQuerySet(models.QuerySet):
+    def for_user(self, user):
+        return self.filter(user=user)
+
+    def in_month(self, year, month):
+        start, end = month_bounds(year, month)
+        return self.filter(date__gte=start, date__lt=end)
+
+    def touching(self, wallet):
+        return self.filter(wallet=wallet)
+
+    def search(self, text):
+        text = (text or "").strip()
+        if not text:
+            return self
+        return self.filter(Q(note__icontains=text) | Q(goal__name__icontains=text))
+
+
+class GoalContribution(models.Model):
+    """Money moved from a wallet into a goal (deposit) or back out (withdrawal).
+
+    The amount is always positive; `kind` gives the direction.
+    """
+
+    class Kind(models.TextChoices):
+        DEPOSIT = "deposit", "Deposit"
+        WITHDRAWAL = "withdrawal", "Withdrawal"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="goal_contributions"
+    )
+    goal = models.ForeignKey(SavingsGoal, on_delete=models.CASCADE, related_name="contributions")
+    wallet = models.ForeignKey(Wallet, on_delete=models.PROTECT, related_name="goal_contributions")
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    amount = models.BigIntegerField()
+    date = models.DateField()
+    note = models.CharField(max_length=120, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = GoalContributionQuerySet.as_manager()
+
+    class Meta:
+        ordering = ["-date", "-created_at", "-id"]
+        indexes = [models.Index(fields=["user", "date"]), models.Index(fields=["wallet", "kind"])]
+        constraints = [
+            models.CheckConstraint(condition=Q(amount__gt=0), name="goal_contribution_amount_positive"),
+        ]
+
+    def __str__(self):
+        return f"{self.get_kind_display()} {self.amount} ({self.goal})"
+
+    @property
+    def is_deposit(self):
+        return self.kind == self.Kind.DEPOSIT
+
+    @property
+    def route(self):
+        """"BCA → Bali trip" for a deposit, "Bali trip → BCA" for a withdrawal (transactions spec)."""
+        if self.is_deposit:
+            return f"{self.wallet.name} → {self.goal.name}"
+        return f"{self.goal.name} → {self.wallet.name}"

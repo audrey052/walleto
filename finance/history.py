@@ -1,8 +1,8 @@
 """Daily wallet balances for the Wallets page trend line (wallets spec, "30-day balance trend").
 
 Design decision 2 (redesign-wallets-page): start from the current balances and
-walk backwards through the movements of the window, so the cost is two queries
-no matter how many wallets or days.
+walk backwards through the movements of the window, so the cost is a fixed number
+of queries (transactions, transfers, goal movements) no matter how many wallets or days.
 """
 
 from collections import defaultdict
@@ -10,7 +10,7 @@ from datetime import timedelta
 
 from django.db.models import Q
 
-from .models import Category, Transaction, Transfer
+from .models import Category, GoalContribution, Transaction, Transfer
 
 
 def balance_history(wallets, today, days=30):
@@ -37,6 +37,12 @@ def balance_history(wallets, today, days=30):
     ):
         movement[source][day] -= amount
         movement[target][day] += amount
+    for wallet_id, day, kind, amount in (
+        GoalContribution.objects.filter(wallet_id__in=ids, date__gte=first, date__lte=today)
+        .values_list("wallet_id", "date", "kind", "amount")
+    ):
+        # A deposit leaves the wallet; a withdrawal comes back (add-savings-goals design decision 3).
+        movement[wallet_id][day] += -amount if kind == GoalContribution.Kind.DEPOSIT else amount
 
     history = {}
     for wallet in wallets:

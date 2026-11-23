@@ -3,7 +3,7 @@
 **Created:** 2026-11-18
 **Last edited:** 2026-11-18
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `99af433` fix: add the modal root to the budget page so its modals open
 **Branch:** `main`, parent `56e9972`
 **OpenSpec change:** none (fix to the archived `add-budgets`, budgets spec "Budget modals")
 **Trigger:** The developer reported that "Set monthly plan" did nothing in the browser.

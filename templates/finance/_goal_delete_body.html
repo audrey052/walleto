@@ -1,0 +1,13 @@
+{% load money %}
+{% if holds_money %}
+  <p class="text-body text-secondary">
+    {{ goal.name }} still holds <strong class="font-semibold text-ink">{{ goal.saved|rupiah }}</strong>.
+    Move it back to a wallet first, then you can delete the goal.
+  </p>
+  <a href="{% url 'finance:goal_withdraw' goal.pk %}?next={% url 'finance:goal_detail' goal.pk %}" class="btn-text self-start"
+     hx-get="{% url 'finance:goal_withdraw' goal.pk %}?next={% url 'finance:goal_detail' goal.pk %}" hx-target="closest dialog" hx-swap="outerHTML">Move money back</a>
+{% else %}
+  <p class="text-body text-secondary">
+    {{ goal.name }} will be removed from your goals. Its past deposits and withdrawals stay in Transactions, and no wallet balance changes.
+  </p>
+{% endif %}

@@ -16,7 +16,7 @@ from core.templatetags.money import rupiah
 
 from . import budgets
 from .forms import TransactionForm, TransferForm
-from .models import Budget, Category, Transaction, Transfer, Wallet
+from .models import Budget, Category, GoalContribution, Transaction, Transfer, Wallet
 from .months import month_param as _month_param
 from .months import parse_month as _parse_month
 from .months import shift as _shift
@@ -60,18 +60,27 @@ def _activity(request):
         Transaction.objects.for_user(user).in_month(year, month).select_related("wallet", "category")
     )
     transfers = Transfer.objects.for_user(user).in_month(year, month).select_related("from_wallet", "to_wallet")
+    # Goal deposits and withdrawals, deleted goals included (add-savings-goals design decision 9).
+    goal_moves = GoalContribution.objects.for_user(user).in_month(year, month).select_related("goal", "wallet")
     if wallet:
         transactions = transactions.filter(wallet=wallet)
         transfers = transfers.touching(wallet)
+        goal_moves = goal_moves.touching(wallet)
     if category:
         transactions = transactions.filter(category=category)
         transfers = transfers.none()  # transfers have no category (transfers spec)
+        goal_moves = goal_moves.none()
     if query:
         transactions = transactions.search(query)
         transfers = transfers.search(query)
+        goal_moves = goal_moves.search(query)
 
-    # Merge both kinds of entries, newest first (design decision 4).
-    entries = [(t, "transaction") for t in transactions] + [(t, "transfer") for t in transfers]
+    # Merge every kind of entry, newest first (design decision 4).
+    entries = (
+        [(t, "transaction") for t in transactions]
+        + [(t, "transfer") for t in transfers]
+        + [(m, "goal") for m in goal_moves]
+    )
     entries.sort(key=lambda pair: (pair[0].date, pair[0].created_at, pair[0].pk), reverse=True)
 
     return {
@@ -154,6 +163,12 @@ def transaction_export(request):
             writer.writerow([
                 entry.date.isoformat(), entry.get_kind_display(), _csv_text(entry.description),
                 _csv_text(entry.note), _csv_text(entry.category.name), _csv_text(entry.wallet.name), signed,
+            ])
+        elif kind == "goal":
+            # transactions spec, "Goal movements in the CSV export"
+            writer.writerow([
+                entry.date.isoformat(), "Savings", _csv_text(entry.route), _csv_text(entry.note),
+                "Savings goal", _csv_text(entry.wallet.name), entry.amount,
             ])
         else:
             route = _csv_text(f"{entry.from_wallet.name} → {entry.to_wallet.name}")

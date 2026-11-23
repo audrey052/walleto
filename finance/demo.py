@@ -12,7 +12,9 @@ from django.contrib.auth import get_user_model
 from django.db import transaction as db_transaction
 
 from . import budgets
-from .models import MIN_CATEGORY_LIMIT, Budget, Category, Transaction, Transfer, Wallet
+from .models import (
+    MIN_CATEGORY_LIMIT, Budget, Category, GoalContribution, SavingsGoal, Transaction, Transfer, Wallet,
+)
 
 DEMO_EMAIL = "demo@walleto.app"
 DEMO_NAME = "Aditya Ramadhan"
@@ -69,6 +71,15 @@ TRANSFERS = [
     ("weekly", 3, "BCA", "OVO", 250_000, "Top up"),
 ]
 
+# Savings goals (demo-account spec, "Demo savings goals"; add-savings-goals design decision 10).
+# name, target, deadline in months after the first demo month, wallet, day of month, deposit, note.
+# Emergency fund saves more than its straight plan needs each month, so it is always on track;
+# New laptop saves far less than its plan, so it is always behind.
+GOALS = [
+    ("Emergency fund", 10_000_000, 6, "BCA", 1, 2_000_000, "After payday"),
+    ("New laptop", 15_000_000, 4, "Bank Jago", 20, 750_000, "A little at a time"),
+]
+
 
 def _first_of_month(day, months_back):
     index = day.year * 12 + (day.month - 1) - months_back
@@ -96,7 +107,9 @@ def get_demo_user():
 @db_transaction.atomic
 def build_demo(today):
     user = get_demo_user()
-    # Children first: wallets are PROTECTed by transactions and transfers.
+    # Children first: wallets are PROTECTed by transactions, transfers and goal movements.
+    GoalContribution.objects.filter(user=user).delete()
+    SavingsGoal.objects.filter(user=user).delete()
     Budget.objects.filter(user=user).delete()
     Transaction.objects.filter(user=user).delete()
     Transfer.objects.filter(user=user).delete()
@@ -111,7 +124,22 @@ def build_demo(today):
         wallets[name] = Wallet.objects.create(user=user, name=name, type=kind, initial_balance=start)
         balances[name] = start
 
-    transactions, transfers = [], []
+    transactions, transfers, deposits = [], [], []
+    first = _first_of_month(today, 2)
+    goals = {}
+    for name, target, months, *_ in GOALS:
+        goals[name] = SavingsGoal.objects.create(
+            user=user, name=name, target=target, start_date=first, deadline=_last_day(first, months),
+        )
+
+    def save_up(day, goal, wallet, amount, note):
+        if balances[wallet] < amount:
+            return
+        balances[wallet] -= amount
+        deposits.append(GoalContribution(
+            user=user, goal=goals[goal], wallet=wallets[wallet],
+            kind=GoalContribution.Kind.DEPOSIT, amount=amount, date=day, note=note,
+        ))
 
     def spend(day, description, note, category, wallet, amount):
         if categories[category].kind == Category.Kind.EXPENSE:
@@ -145,6 +173,9 @@ def build_demo(today):
         for rule, when, source, target, amount, note in TRANSFERS:
             if (rule == "monthly" and day.day == when) or (rule == "weekly" and day.weekday() == when):
                 move(day, source, target, amount, note)
+        for name, _target, _months, wallet, dom, amount, note in GOALS:
+            if day.day == dom:
+                save_up(day, name, wallet, amount, note)
         for description, note, category, wallet, weekday, low, high in WEEKLY:
             if day.weekday() == weekday:
                 spend(day, description, note, category, wallet, _amount(rng, low, high))
@@ -156,8 +187,15 @@ def build_demo(today):
     # bulk_create skips save(), so kind was set explicitly above.
     Transaction.objects.bulk_create(transactions)
     Transfer.objects.bulk_create(transfers)
+    GoalContribution.objects.bulk_create(deposits)
     _build_budgets(user, today, transactions)
     return user
+
+
+def _last_day(first, months):
+    """Last day of the month `months` after the month of `first` (Sep + 6 -> 31 Mar)."""
+    year, month = divmod(first.year * 12 + first.month + months, 12)  # the month after, 0-based
+    return date(year, month + 1, 1) - timedelta(days=1)
 
 
 def _round_up(amount, step=50_000):

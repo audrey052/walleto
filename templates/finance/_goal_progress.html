@@ -1,0 +1,5 @@
+{# Goal progress bar: forest, never amber or clay (the budget colors mean "running out"). #}
+<div class="progress {{ css_class }}" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+     aria-valuenow="{% if summary.percent > 100 %}100{% else %}{{ summary.percent }}{% endif %}" aria-label="{{ summary.goal.name }} saved">
+  <span style="width: {% if summary.percent > 100 %}100{% else %}{{ summary.percent }}{% endif %}%;"></span>
+</div>

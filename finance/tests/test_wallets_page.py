@@ -75,7 +75,8 @@ class BalanceHistoryTests(WalletsTestCase):
         for index in range(3):
             Wallet.objects.create(user=self.user, name=f"Extra {index}")
         wallets = list(Wallet.objects.for_user(self.user).with_balance())
-        with self.assertNumQueries(2):
+        # Transactions, transfers and goal movements: one query each (add-savings-goals).
+        with self.assertNumQueries(3):
             balance_history(wallets, TODAY)
 
 

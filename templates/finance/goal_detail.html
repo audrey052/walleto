@@ -1,0 +1,133 @@
+{% extends "layouts/app.html" %}
+{% load icons money static %}
+
+{% block title %}{{ goal.name }}{% endblock %}
+{% block head %}<script src="{% static 'vendor/apexcharts.min.js' %}" defer></script>{% endblock %}
+{% block breadcrumb %}Savings goals{% endblock %}
+
+{% block content %}
+  {% url 'finance:goal_detail' goal.pk as here %}
+  <a href="{% url 'finance:goals' %}" class="btn-text mb-5 text-secondary">{% icon "chevron-left" size=15 %} Savings goals</a>
+
+  <div class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div class="min-w-0">
+      <h1 class="[overflow-wrap:anywhere]">{{ goal.name }}</h1>
+      <p class="mt-2 flex flex-wrap items-center gap-2 text-body text-secondary">
+        {% if goal.completed_at %}
+          Completed {{ goal.completed_at|date:"j M Y" }}
+        {% else %}
+          {% if goal.deadline %}By {{ goal.deadline|date:"j M Y" }}{% else %}No deadline{% endif %}
+          · Started {{ goal.start_date|date:"j M Y" }}
+          {% include "finance/_goal_status.html" with summary=summary %}
+        {% endif %}
+      </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2.5">
+      {% if goal.completed_at %}
+        <form method="post" action="{% url 'finance:goal_reopen' goal.pk %}">
+          {% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+          <button type="submit" class="btn">Reopen goal</button>
+        </form>
+      {% else %}
+        {% if not goal.is_main %}
+          <form method="post" action="{% url 'finance:goal_make_main' goal.pk %}">
+            {% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+            <button type="submit" class="btn-text text-secondary">Make main goal</button>
+          </form>
+        {% endif %}
+        <a href="{% url 'finance:goal_edit' goal.pk %}?next={{ here }}" class="btn"
+           hx-get="{% url 'finance:goal_edit' goal.pk %}?next={{ here }}" hx-target="#modal-root">{% icon "edit" size=15 %} Edit</a>
+        {% if summary.saved > 0 %}
+          <a href="{% url 'finance:goal_withdraw' goal.pk %}?next={{ here }}" class="btn"
+             hx-get="{% url 'finance:goal_withdraw' goal.pk %}?next={{ here }}" hx-target="#modal-root">Move money back</a>
+        {% endif %}
+        {% if summary.reached %}
+          <form method="post" action="{% url 'finance:goal_complete' goal.pk %}">
+            {% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+            <button type="submit" class="btn btn-primary">{% icon "check" size=16 %} Mark as complete</button>
+          </form>
+        {% else %}
+          <a href="{% url 'finance:goal_deposit' goal.pk %}?next={{ here }}" class="btn btn-primary"
+             hx-get="{% url 'finance:goal_deposit' goal.pk %}?next={{ here }}" hx-target="#modal-root">{% icon "plus" size=16 %} Add to this goal</a>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  {# Progress panel, in the style of the Budget overview #}
+  <section class="panel mb-6 flex flex-col gap-6 bg-forest-tint p-6 md:p-7 lg:flex-row lg:items-center lg:justify-between lg:gap-12">
+    <div class="min-w-0">
+      <p class="eyebrow">Saved so far</p>
+      <p class="mt-2 flex flex-wrap items-baseline gap-x-2.5">
+        {% amount summary.saved css_class="amount-display" %}
+        <span class="text-caption text-muted">of {{ goal.target|rupiah }}</span>
+      </p>
+      <p class="mt-1 text-caption text-secondary">
+        {% if summary.per_month %}
+          Put aside {{ summary.per_month|rupiah }} a month to reach your target by {{ goal.deadline|date:"F Y" }}.
+        {% elif summary.reached %}
+          Your goal, reached.
+        {% elif summary.status == "past_deadline" %}
+          The deadline has passed. Edit the goal to set a new one.
+        {% else %}
+          No deadline, so no monthly amount.
+        {% endif %}
+      </p>
+    </div>
+    <div class="w-full lg:w-[38%]">
+      <div class="mb-3 flex items-center justify-between text-caption text-secondary">
+        <span>{% if summary.reached %}Your goal, reached.{% else %}{{ summary.percent }}% of the way there{% endif %}</span>
+        <strong class="font-semibold text-ink">{{ summary.to_go|rupiah }} to go</strong>
+      </div>
+      {% include "finance/_goal_progress.html" with summary=summary %}
+    </div>
+  </section>
+
+  <section class="panel mb-6" aria-labelledby="goal-chart-title">
+    <div class="flex flex-wrap items-center justify-between gap-3 px-5 pt-[22px] md:px-[23px]">
+      <h2 id="goal-chart-title" class="text-section font-semibold">Progress</h2>
+      <div class="flex items-center gap-4 text-caption text-secondary">
+        <span class="flex items-center gap-1.5"><span class="h-0.5 w-4 rounded bg-forest"></span>Saved</span>
+        {% if chart.plan %}<span class="flex items-center gap-1.5"><span class="w-4 border-t-[1.5px] border-dashed border-chart-3"></span>Plan</span>{% endif %}
+      </div>
+    </div>
+    {{ chart|json_script:"goal-chart-data" }}
+    <div x-data="goalChart" class="px-2 pb-3 md:px-4">
+      <div x-ref="chart" class="min-h-[260px]" role="img"
+           aria-label="Saved amount over time{% if chart.plan %}, against a straight plan to {{ goal.target|rupiah }} by {{ goal.deadline|date:'j M Y' }}{% endif %}"></div>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="goal-history">
+    <div class="px-5 pt-[22px] pb-4 md:px-[23px]">
+      <h2 id="goal-history" class="text-section font-semibold">History</h2>
+    </div>
+    {% if movements %}
+      <ul>
+        {% for record in movements %}
+          <li class="flex items-center gap-4 border-t border-[#f0efe9] px-5 py-4 md:px-[25px]">
+            <span class="grid size-8 shrink-0 place-items-center rounded-[7px] border border-[#eeede6] bg-[#f8f7f2] text-[#8a8370]">
+              {% if record.is_deposit %}{% icon "arrow-down" size=15 %}{% else %}{% icon "arrow-up" size=15 %}{% endif %}
+            </span>
+            <span class="min-w-0 flex-1">
+              <strong class="block truncate text-control font-semibold">{% if record.is_deposit %}From {{ record.wallet.name }}{% else %}To {{ record.wallet.name }}{% endif %}</strong>
+              <span class="mt-1 block truncate text-caption text-muted">{{ record.date|date:"j M Y" }}{% if record.note %} · {{ record.note }}{% endif %}</span>
+            </span>
+            <span class="text-control font-semibold whitespace-nowrap tabular-nums {% if record.is_deposit %}text-forest{% else %}text-secondary{% endif %}">
+              {% if record.is_deposit %}+{% else %}−{% endif %}{{ record.amount|rupiah }}
+            </span>
+            {% if not goal.completed_at %}
+              <a href="{% url 'finance:goal_movement_delete' record.pk %}" class="btn-icon size-8"
+                 hx-get="{% url 'finance:goal_movement_delete' record.pk %}" hx-target="#modal-root"
+                 aria-label="Remove this {% if record.is_deposit %}deposit{% else %}withdrawal{% endif %}" title="Remove">{% icon "close" size=15 %}</a>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="border-t border-[#f0efe9] px-5 py-8 text-center text-body text-secondary md:px-[25px]">No money added yet.</p>
+    {% endif %}
+  </section>
+
+  <div id="modal-root"></div>
+{% endblock %}

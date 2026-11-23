@@ -1,0 +1,160 @@
+{% extends "layouts/app.html" %}
+{% load icons money %}
+
+{% block title %}Savings goals{% endblock %}
+
+{% block content %}
+  {% url 'finance:goals' as goals_url %}
+  <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1>Savings goals</h1>
+      <p class="mt-1.5 text-body text-secondary">{{ active_section.subtitle }}</p>
+    </div>
+    <a href="{% url 'finance:goal_create' %}" class="btn btn-primary self-start sm:self-auto"
+       hx-get="{% url 'finance:goal_create' %}" hx-target="#modal-root">{% icon "plus" size=16 %} New goal</a>
+  </div>
+
+  {% if main %}
+    {% with goal=main.goal %}
+      {% url 'finance:goal_detail' goal.pk as detail_url %}
+      {# Main goal card, after the Figma `.savings-feature` (grid 1.8fr / 1fr, 40px padding). #}
+      <section class="panel grid gap-8 p-6 md:grid-cols-[1.8fr_1fr] md:gap-[50px] md:p-10" aria-labelledby="main-goal-name">
+        <div class="min-w-0">
+          <p class="eyebrow">Main goal</p>
+          <h2 id="main-goal-name" class="mt-3.5 text-[25px] font-semibold tracking-[-0.9px] [overflow-wrap:anywhere]">
+            <a href="{{ detail_url }}" class="hover:text-forest">{{ goal.name }}</a>
+          </h2>
+          <p class="mt-3 flex flex-wrap items-center gap-2 text-caption text-muted">
+            {% if goal.deadline %}By {{ goal.deadline|date:"j M Y" }}{% else %}No deadline{% endif %}
+            {% include "finance/_goal_status.html" with summary=main %}
+          </p>
+          <p class="mt-7 mb-5 flex flex-wrap items-baseline gap-x-2.5">
+            {% amount main.saved css_class="amount-display" %}
+            <span class="text-caption whitespace-nowrap text-muted">of {{ goal.target|rupiah }}</span>
+          </p>
+          {% include "finance/_goal_progress.html" with summary=main %}
+          <div class="mt-3 flex justify-between gap-4 text-caption text-muted">
+            <span>{% if main.reached %}Your goal, reached.{% else %}{{ main.percent }}% of the way there{% endif %}</span>
+            <span>{{ main.to_go|rupiah }} to go</span>
+          </div>
+          <div class="mt-7 flex flex-wrap items-center gap-5">
+            {% if main.reached %}
+              <form method="post" action="{% url 'finance:goal_complete' goal.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">{% icon "check" size=16 %} Mark as complete</button>
+              </form>
+            {% else %}
+              <a href="{% url 'finance:goal_deposit' goal.pk %}" class="btn btn-primary"
+                 hx-get="{% url 'finance:goal_deposit' goal.pk %}" hx-target="#modal-root">{% icon "plus" size=16 %} Add to this goal</a>
+            {% endif %}
+            <a href="{% url 'finance:goal_edit' goal.pk %}" class="btn-text"
+               hx-get="{% url 'finance:goal_edit' goal.pk %}" hx-target="#modal-root">Edit goal {% icon "arrow-right" size=15 %}</a>
+            <a href="{{ detail_url }}" class="btn-text text-secondary">View history</a>
+          </div>
+        </div>
+        {# Figma ledger lines: 9 rising bars, filled by how much is saved. #}
+        <div class="hidden flex-col justify-between border-l border-border pl-10 md:flex" aria-hidden="true">
+          <span class="text-[57px] leading-none font-normal tracking-[-3px] text-[#d0d7c8] tabular-nums">{{ main.percent }}%</span>
+          <div class="flex h-[100px] items-end gap-[5px]">
+            {% for height in ledger_heights %}
+              <div class="w-[13px] rounded-t-[2px] border {% if forloop.counter <= main.lines_filled %}border-[#729174] bg-[#729174]{% else %}border-[#e0e5d6] bg-[#e9ece1]{% endif %}"
+                   style="height: {{ height }}%"></div>
+            {% endfor %}
+          </div>
+          <span class="mt-6 text-caption text-muted">Started {{ goal.start_date|date:"j M Y" }}</span>
+        </div>
+      </section>
+
+      {# Figma `.insight-row` #}
+      {% if main.per_month or main.reached %}
+        <div class="my-5 flex items-center gap-3 rounded-control border border-[#e6e8db] bg-[#f2f3eb] px-[18px] py-[15px]">
+          <span class="text-[#738069]">{% icon "info" size=18 %}</span>
+          <p class="flex-1 text-caption leading-[1.8] text-[#777c6b]">
+            {% if main.reached %}
+              You reached this goal. <strong class="font-semibold text-[#5d6653]">Mark it complete</strong> once you've used the money.
+            {% else %}
+              Put aside <strong class="font-semibold text-[#5d6653]">{{ main.per_month|rupiah }} a month</strong> to reach your target by {{ goal.deadline|date:"F Y" }}.
+            {% endif %}
+          </p>
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% if others %}
+      <section class="panel mt-6" aria-labelledby="other-goals">
+        <div class="flex items-center gap-2 px-5 pt-[22px] pb-4 md:px-[23px]">
+          <h2 id="other-goals" class="text-section font-semibold">Other goals</h2>
+          <span class="rounded-[3px] bg-[#f1f2eb] px-1.5 py-0.5 text-caption text-[#8c9180]">{{ others|length }}</span>
+        </div>
+        <ul>
+          {% for summary in others %}
+            {% with goal=summary.goal %}
+              <li class="group relative border-t border-[#f0efe9] transition-colors hover:bg-[#fdfdfa]">
+                <a href="{% url 'finance:goal_detail' goal.pk %}" class="absolute inset-0" aria-label="Open {{ goal.name }}"></a>
+                <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2.5 px-5 py-5 md:grid-cols-[minmax(0,1.4fr)_minmax(0,2fr)_150px_auto] md:px-[25px]">
+                  <div class="min-w-0">
+                    <strong class="block truncate text-control font-semibold">{{ goal.name }}</strong>
+                    <span class="mt-1.5 flex flex-wrap items-center gap-2 text-caption text-muted">
+                      {% if goal.deadline %}By {{ goal.deadline|date:"j M Y" }}{% else %}No deadline{% endif %}
+                      {% include "finance/_goal_status.html" with summary=summary %}
+                    </span>
+                  </div>
+                  <div class="col-span-2 row-start-2 flex items-center gap-3 md:col-span-1 md:row-start-auto">
+                    <span class="flex-1">{% include "finance/_goal_progress.html" with summary=summary %}</span>
+                    <span class="w-9 text-right text-caption text-secondary">{{ summary.percent }}%</span>
+                  </div>
+                  <div class="text-right">
+                    <strong class="block text-control font-semibold whitespace-nowrap">{{ summary.saved|rupiah }}</strong>
+                    <span class="mt-1 block text-caption whitespace-nowrap text-muted">of {{ goal.target|rupiah }}</span>
+                  </div>
+                  <form method="post" action="{% url 'finance:goal_make_main' goal.pk %}" class="relative z-10 col-span-2 row-start-3 md:col-span-1 md:row-start-auto">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-text text-secondary md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">Make main goal</button>
+                  </form>
+                </div>
+              </li>
+            {% endwith %}
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+  {% else %}
+    <section class="panel">
+      <div class="empty-state">
+        <span class="empty-state-icon">{% icon "goal" size=24 %}</span>
+        <h2>Start your first goal</h2>
+        <p class="mt-2 max-w-sm text-body text-secondary">
+          Name what you're saving for and how much it takes. Money you add moves out of a wallet and is kept for the goal.
+        </p>
+        <a href="{% url 'finance:goal_create' %}" class="btn btn-primary mt-6"
+           hx-get="{% url 'finance:goal_create' %}" hx-target="#modal-root">{% icon "plus" size=16 %} Create a goal</a>
+      </div>
+    </section>
+  {% endif %}
+
+  {% if completed %}
+    <section class="mt-8" aria-labelledby="completed-goals">
+      <h2 id="completed-goals" class="mb-3 text-section font-semibold">Completed</h2>
+      <ul class="panel">
+        {% for summary in completed %}
+          {% with goal=summary.goal %}
+            <li class="flex items-center gap-4 px-5 py-4 md:px-[25px] {% if not forloop.first %}border-t border-[#f0efe9]{% endif %}">
+              <span class="grid size-8 shrink-0 place-items-center rounded-full bg-forest-tint text-forest">{% icon "check" size=15 %}</span>
+              <a href="{% url 'finance:goal_detail' goal.pk %}" class="min-w-0 flex-1 hover:text-forest">
+                <strong class="block truncate text-control font-semibold">{{ goal.name }}</strong>
+                <span class="mt-1 block text-caption text-muted">Completed {{ goal.completed_at|date:"j M Y" }}</span>
+              </a>
+              <span class="text-control font-semibold whitespace-nowrap tabular-nums">{{ summary.saved|rupiah }}</span>
+              <form method="post" action="{% url 'finance:goal_reopen' goal.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-text text-secondary">Reopen</button>
+              </form>
+            </li>
+          {% endwith %}
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+  <div id="modal-root"></div>
+{% endblock %}

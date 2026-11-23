@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Budget, Category, Transaction, Transfer, Wallet
+from .models import Budget, Category, GoalContribution, SavingsGoal, Transaction, Transfer, Wallet
 
 
 @admin.register(Wallet)
@@ -42,3 +42,17 @@ class BudgetAdmin(admin.ModelAdmin):
     list_display = ["month", "category", "limit", "user"]
     list_filter = ["month", "category"]
     search_fields = ["user__email"]
+
+
+@admin.register(SavingsGoal)
+class SavingsGoalAdmin(admin.ModelAdmin):
+    list_display = ["name", "user", "target", "deadline", "start_date", "is_main", "completed_at", "deleted_at"]
+    search_fields = ["name", "user__email"]
+
+
+@admin.register(GoalContribution)
+class GoalContributionAdmin(admin.ModelAdmin):
+    list_display = ["date", "goal", "kind", "amount", "wallet", "user"]
+    list_filter = ["kind"]
+    search_fields = ["note", "goal__name", "user__email"]
+    date_hierarchy = "date"

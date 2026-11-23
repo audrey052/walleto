@@ -101,6 +101,30 @@
             </thead>
             <tbody>
               {% for entry, type in entries %}
+                {% if type == "goal" %}
+                  {# Goal deposit or withdrawal (transactions spec, "Goal movements in the Transactions list"). #}
+                  {% if not entry.goal.deleted_at %}{% url 'finance:goal_detail' entry.goal_id as goal_url %}{% endif %}
+                  <tr class="border-b border-[#f0efe9] transition-colors last:border-b-0 {% if goal_url %}cursor-pointer hover:bg-[#fdfdfa]{% endif %}"
+                      {% if goal_url %}onclick="window.location = '{{ goal_url }}'"{% endif %}>
+                    <td class="py-3 pr-5 pl-4 md:pl-6">
+                      {% if goal_url %}<a href="{{ goal_url }}" class="flex items-center gap-3">{% else %}<span class="flex items-center gap-3">{% endif %}
+                        <span class="grid size-8 shrink-0 place-items-center rounded-[7px] border border-[#eeede6] bg-[#f8f7f2] text-[#8a8370]">{% icon "goal" size=17 %}</span>
+                        <span class="min-w-0">
+                          <strong class="block truncate text-control font-semibold">{{ entry.route }}</strong>
+                          <span class="block truncate text-caption text-muted">{{ entry.note|default:entry.get_kind_display }}</span>
+                        </span>
+                      {% if goal_url %}</a>{% else %}</span>{% endif %}
+                    </td>
+                    <td class="px-5 py-3"><span class="chip" style="--chip: #688373">Savings goal</span></td>
+                    <td class="px-5 py-3">
+                      <span class="inline-flex items-center gap-1.5 text-control text-secondary">
+                        <i class="size-[5px] rounded-[2px] opacity-80" style="background: {{ entry.wallet.color }}"></i>{{ entry.wallet.name }}
+                      </span>
+                    </td>
+                    <td class="px-5 py-3 text-control text-muted">{{ entry.date|date:"j M Y" }}</td>
+                    <td class="py-3 pr-4 pl-5 text-right text-body font-medium md:pr-6"><span class="text-secondary">{% amount entry.amount %}</span></td>
+                  </tr>
+                {% else %}
                 {% if type == "transaction" %}
                   {% url 'finance:transaction_edit' entry.pk as edit_url %}
                 {% else %}
@@ -156,6 +180,7 @@
                     {% endif %}
                   </td>
                 </tr>
+                {% endif %}
               {% endfor %}
             </tbody>
           </table>

@@ -1,11 +1,15 @@
 from django import forms
 from django.db.models import Q
-from django.utils import timezone
+from django.utils import dateformat, timezone
 
 from core.forms import AmountField
+from core.templatetags.money import rupiah
 
 from . import budgets
-from .models import MIN_CATEGORY_LIMIT, MIN_PLAN_TOTAL, Category, Transaction, Transfer, Wallet
+from .models import (
+    MIN_CATEGORY_LIMIT, MIN_GOAL_TARGET, MIN_PLAN_TOTAL,
+    Category, GoalContribution, SavingsGoal, Transaction, Transfer, Wallet,
+)
 
 DUPLICATE_NAME = "You already have a wallet with this name."
 AMOUNT_POSITIVE = "Amount must be greater than 0."
@@ -241,3 +245,135 @@ class CategoryLimitForm(forms.Form):
         if limit is None or limit < MIN_CATEGORY_LIMIT:
             raise forms.ValidationError(LIMIT_TOO_SMALL)
         return limit
+
+
+# ---------- savings goals (savings-goals spec) ----------
+
+GOAL_NAME_USED = "You already have a goal with this name."
+GOAL_TARGET_TOO_SMALL = "The target must be at least Rp1.000."
+DEADLINE_NOT_FUTURE = "The deadline must be after today."
+CHOOSE_WALLET = "Choose a wallet."
+BEFORE_START = "The date can't be before this goal started ({start})."
+GOAL_HOLDS_ONLY = "This goal holds only {amount}."
+
+
+class GoalForm(forms.ModelForm):
+    target = AmountField(
+        label="Target",
+        error_messages={"required": GOAL_TARGET_TOO_SMALL},
+        widget=forms.TextInput(attrs={"placeholder": "e.g. 6.000.000"}),
+    )
+
+    class Meta:
+        model = SavingsGoal
+        fields = ["name", "target", "deadline"]
+        labels = {"name": "Name", "deadline": "Deadline (optional)"}
+        error_messages = {"name": {"required": "Enter a name for this goal."}}
+        widgets = {
+            "name": forms.TextInput(attrs={"placeholder": "e.g. Bali trip, Emergency fund", "autocomplete": "off"}),
+            "deadline": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+        }
+
+    def __init__(self, *args, user, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+        self.instance.user = user
+        self._saved_deadline = self.instance.deadline if self.instance.pk else None
+        _style(self)
+
+    def clean_name(self):
+        name = " ".join(self.cleaned_data["name"].split())
+        if not name:
+            raise forms.ValidationError("Enter a name for this goal.")
+        clashes = SavingsGoal.objects.for_user(self.user).active().filter(name__iexact=name)
+        if self.instance.pk:
+            clashes = clashes.exclude(pk=self.instance.pk)
+        if clashes.exists():
+            raise forms.ValidationError(GOAL_NAME_USED)
+        return name
+
+    def clean_target(self):
+        target = self.cleaned_data["target"]
+        if target is None or target < MIN_GOAL_TARGET:
+            raise forms.ValidationError(GOAL_TARGET_TOO_SMALL)
+        return target
+
+    def clean_deadline(self):
+        deadline = self.cleaned_data.get("deadline")
+        # An edit may keep a deadline that has since passed (spec, "Edit and delete goals").
+        if deadline and deadline <= timezone.localdate() and deadline != self._saved_deadline:
+            raise forms.ValidationError(DEADLINE_NOT_FUTURE)
+        return deadline
+
+    def save(self, commit=True):
+        if not self.instance.pk:
+            self.instance.start_date = timezone.localdate()
+        return super().save(commit)
+
+
+class _GoalMovementForm(_DateNotInFuture, forms.ModelForm):
+    """Deposit or withdrawal between one of the user's active wallets and a goal."""
+
+    kind = None
+    amount = _positive_amount_field()
+
+    class Meta:
+        model = GoalContribution
+        fields = ["wallet", "amount", "date", "note"]
+        labels = {"note": "Note (optional)"}
+        widgets = {
+            "date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "note": forms.TextInput(attrs={"placeholder": "e.g. After payday"}),
+        }
+
+    def __init__(self, *args, user, goal, **kwargs):
+        self.user, self.goal = user, goal
+        super().__init__(*args, **kwargs)
+        self.instance.user, self.instance.goal, self.instance.kind = user, goal, self.kind
+        field = self.fields["wallet"]
+        field.queryset = Wallet.objects.for_user(user).active().with_balance()
+        field.label_from_instance = lambda w: f"{w.name} · {rupiah(w.balance)}"
+        field.empty_label = "Choose a wallet"
+        field.error_messages.update({"required": CHOOSE_WALLET, "invalid_choice": CHOOSE_WALLET})
+        if not self.is_bound:
+            self.initial.setdefault("date", timezone.localdate())
+            first = field.queryset.first()
+            if first:
+                self.initial.setdefault("wallet", first.pk)
+        _style(self)
+
+    def clean_amount(self):
+        amount = self.cleaned_data["amount"]
+        if amount is None or amount <= 0:
+            raise forms.ValidationError(AMOUNT_POSITIVE)
+        return amount
+
+    def clean_date(self):
+        value = super().clean_date()
+        if value < self.goal.start_date:
+            start = self.goal.start_date
+            raise forms.ValidationError(BEFORE_START.format(start=f"{start.day} {dateformat.format(start, 'M Y')}"))
+        return value
+
+
+class DepositForm(_GoalMovementForm):
+    kind = GoalContribution.Kind.DEPOSIT
+
+    def clean(self):
+        cleaned = super().clean()
+        wallet, amount = cleaned.get("wallet"), cleaned.get("amount")
+        if wallet and amount and amount > Wallet.objects.with_balance().get(pk=wallet.pk).balance:
+            self.add_error("amount", NOT_ENOUGH.format(name=wallet.name))
+        return cleaned
+
+
+class WithdrawForm(_GoalMovementForm):
+    kind = GoalContribution.Kind.WITHDRAWAL
+
+    def clean(self):
+        cleaned = super().clean()
+        amount = cleaned.get("amount")
+        saved = SavingsGoal.objects.with_saved().get(pk=self.goal.pk).saved
+        if amount and amount > saved:
+            self.add_error("amount", GOAL_HOLDS_ONLY.format(amount=rupiah(saved)))
+        return cleaned

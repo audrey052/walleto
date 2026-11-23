@@ -10,7 +10,7 @@ from core.htmx import redirect_after_save, render_form
 
 from .forms import WalletForm
 from .history import balance_history
-from .models import Transfer, Wallet
+from .models import SavingsGoal, Transfer, Wallet
 
 HISTORY_DAYS = 30
 
@@ -49,6 +49,8 @@ def wallet_list(request):
             "history_start": today - timedelta(days=HISTORY_DAYS - 1),
             "recent_transfers": Transfer.objects.for_user(user).select_related("from_wallet", "to_wallet")[:3],
             "can_transfer": len(active) >= 2,
+            # wallets spec, "Money set aside in goals": active goals only; completed money was used.
+            "set_aside": sum(g.saved for g in SavingsGoal.objects.for_user(user).active().with_saved()),
         },
     )
 

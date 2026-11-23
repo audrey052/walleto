@@ -96,6 +96,36 @@ document.addEventListener("alpine:init", () => {
     },
   }));
 
+  // Goal detail chart (savings-goals spec, "Goal detail page"): saved per day as a
+  // stepline, and the straight plan line when the goal has a deadline. Data comes
+  // from a json_script tag; ApexCharts is loaded only on that page.
+  Alpine.data("goalChart", () => ({
+    init() {
+      const data = JSON.parse(document.getElementById("goal-chart-data").textContent);
+      const draw = () => {
+        const points = (rows) => rows.map(([day, value]) => ({ x: new Date(`${day}T00:00:00`).getTime(), y: value }));
+        const series = [{ name: "Saved", type: "line", data: points(data.saved) }];
+        if (data.plan) series.push({ name: "Plan", type: "line", data: points(data.plan) });
+        const chart = new window.ApexCharts(this.$refs.chart, {
+          chart: { height: 260, type: "line", fontFamily: "inherit", toolbar: { show: false }, zoom: { enabled: false }, animations: { enabled: false } },
+          series,
+          colors: ["#1f5c4a", "#99aa99"],
+          stroke: { width: [2.5, 1.5], curve: ["stepline", "straight"], dashArray: [0, 5] },
+          markers: { size: 0, hover: { size: 4 } },
+          grid: { borderColor: "#eaece3", strokeDashArray: 3, padding: { left: 8, right: 8 } },
+          xaxis: { type: "datetime", labels: { style: { colors: "#92918a", fontSize: "11px" }, datetimeUTC: false }, axisBorder: { show: false }, axisTicks: { show: false } },
+          yaxis: { min: 0, max: Math.max(data.target, ...data.saved.map(([, v]) => v)), tickAmount: 4, labels: { style: { colors: "#92918a", fontSize: "11px" }, formatter: (v) => rupiah(Math.round(v)) } },
+          tooltip: { x: { format: "d MMM yyyy" }, y: { formatter: (v) => rupiah(Math.round(v)) } },
+          legend: { show: false },
+          dataLabels: { enabled: false },
+        });
+        chart.render();
+      };
+      if (window.ApexCharts) draw();
+      else window.addEventListener("load", draw, { once: true });
+    },
+  }));
+
   // Toast that closes itself after about four seconds.
   Alpine.data("toast", () => ({
     visible: true,

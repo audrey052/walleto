@@ -39,6 +39,11 @@
           <i class="size-0.5 rounded-full bg-muted" aria-hidden="true"></i>
           As of {{ today|date:"j M Y" }}
         </p>
+        {% if set_aside %}
+          <a href="{% url 'finance:goals' %}" class="mt-3.5 inline-flex items-center gap-2 text-caption text-secondary hover:text-forest">
+            {% icon "goal" size=14 %} Set aside in goals <strong class="font-semibold text-ink tabular-nums">{{ set_aside|rupiah }}</strong>
+          </a>
+        {% endif %}
       </div>
       <dl class="flex flex-col justify-center gap-3.5 px-6 py-[22px] md:gap-[18px] md:px-8 md:py-7">
         {% for item in breakdown %}

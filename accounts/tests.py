@@ -132,7 +132,7 @@ class AccessTests(TestCase):
         "finance:transactions",
         "finance:wallets",
         "finance:budget",
-        "core:savings",
+        "finance:goals",
         "core:assistant",
     ]
 

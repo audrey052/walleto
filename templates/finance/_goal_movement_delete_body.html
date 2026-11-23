@@ -1,0 +1,14 @@
+{% load money %}
+{% if blocked %}
+  <p class="text-body text-secondary">Removing this deposit would leave {{ record.goal.name }} below Rp0. Remove the withdrawals after it first.</p>
+{% elif record.is_deposit %}
+  <p class="text-body text-secondary">
+    The deposit of <strong class="font-semibold text-ink">{{ record.amount|rupiah }}</strong> from {{ record.wallet.name }} on {{ record.date|date:"j M Y" }}
+    will be removed. The money goes back to {{ record.wallet.name }}, and {{ record.goal.name }} drops by the same amount.
+  </p>
+{% else %}
+  <p class="text-body text-secondary">
+    The withdrawal of <strong class="font-semibold text-ink">{{ record.amount|rupiah }}</strong> to {{ record.wallet.name }} on {{ record.date|date:"j M Y" }}
+    will be removed. The money leaves {{ record.wallet.name }} again and returns to {{ record.goal.name }}.
+  </p>
+{% endif %}

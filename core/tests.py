@@ -65,10 +65,10 @@ class AppShellTests(TestCase):
         self.assertEqual(response.context["active_section"]["key"], "wallets")
 
     def test_placeholder_page_shows_title_subtitle_and_coming_soon(self):
-        response = self.client.get(reverse("core:savings"))
+        response = self.client.get(reverse("core:assistant"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Savings goals")
-        self.assertContains(response, "Track progress toward what you")
+        self.assertContains(response, "Assistant")
+        self.assertContains(response, "Ask about your spending")
         self.assertContains(response, "Coming soon")
 
     def test_home_is_dashboard(self):

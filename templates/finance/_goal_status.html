@@ -1,0 +1,4 @@
+{# Usage: {% include "finance/_goal_status.html" with summary=summary %} - nothing without a status. #}
+{% if summary.status %}
+  <span class="chip" style="--chip: {% if summary.status == 'on_track' %}var(--color-forest){% elif summary.status == 'behind' %}var(--color-amber){% else %}var(--color-clay){% endif %}">{{ summary.status_label }}</span>
+{% endif %}
