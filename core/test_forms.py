@@ -63,3 +63,13 @@ class AmountFieldTests(SimpleTestCase):
         self.assertIn("data-money", attrs)
         self.assertEqual(attrs["inputmode"], "numeric")
         self.assertNotIn("data-money", AmountField(allow_negative=True).widget_attrs(forms.TextInput()))
+
+
+class AssetTagTests(SimpleTestCase):
+    def test_static_url_carries_the_file_version(self):
+        import os
+        from django.contrib.staticfiles import finders
+        from core.templatetags.assets import asset
+        url = asset("js/app.js")
+        self.assertEqual(url, f"/static/js/app.js?v={int(os.path.getmtime(finders.find('js/app.js')))}")
+        self.assertEqual(asset("missing/file.js"), "/static/missing/file.js")

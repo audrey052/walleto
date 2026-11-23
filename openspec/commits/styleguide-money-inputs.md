@@ -3,7 +3,7 @@
 **Created:** 2026-11-23
 **Last edited:** 2026-11-23
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `2b48268` fix: format the style guide's sample money inputs
 **Branch:** `main`, parent `5cec7fa`
 **OpenSpec change:** none (development-only page)
 **Trigger:** An audit after `5cec7fa`, when the developer asked whether every money field gets the dot separators.
