@@ -3,7 +3,7 @@
 **Created:** 2026-11-23
 **Last edited:** 2026-11-23
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `680acc6` fix: show the new goal button only once a goal exists
 **Branch:** `main`, parent `b8ac963`
 **OpenSpec change:** `add-savings-goals` (MVP 4), follow-up to the Savings goals page
 **Trigger:** The developer found two create buttons on an empty Savings goals page: "New goal" in the heading and "Create a goal" in the empty state.

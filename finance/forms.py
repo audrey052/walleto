@@ -47,7 +47,7 @@ def _positive_amount_field(label="Amount"):
     return AmountField(
         label=label,
         error_messages={"required": AMOUNT_POSITIVE},
-        widget=forms.TextInput(attrs={"placeholder": "e.g. 67.500"}),
+        widget=forms.TextInput(attrs={"placeholder": "67.500"}),
     )
 
 
@@ -56,7 +56,7 @@ class WalletForm(forms.ModelForm):
         label="Starting balance",
         required=False,
         help_text="How much was in this wallet before you started using Walleto. Leave empty for Rp0.",
-        widget=forms.TextInput(attrs={"placeholder": "e.g. 2.500.000"}),
+        widget=forms.TextInput(attrs={"placeholder": "2.500.000"}),
     )
 
     class Meta:
@@ -65,7 +65,7 @@ class WalletForm(forms.ModelForm):
         labels = {"name": "Name", "type": "Type"}
         error_messages = {"name": {"required": "Enter a name for this wallet."}}
         widgets = {
-            "name": forms.TextInput(attrs={"placeholder": "e.g. BCA, GoPay, Cash", "autocomplete": "off"}),
+            "name": forms.TextInput(attrs={"placeholder": "BCA, GoPay, Cash", "autocomplete": "off"}),
         }
 
     def __init__(self, *args, user, **kwargs):
@@ -96,9 +96,9 @@ class TransactionForm(_DateNotInFuture, forms.ModelForm):
         labels = {"note": "Note (optional)"}
         error_messages = {"description": {"required": "Enter a description, for example GoFood."}}
         widgets = {
-            "description": forms.TextInput(attrs={"placeholder": "e.g. GoFood, Indomaret, Salary", "autocomplete": "off"}),
+            "description": forms.TextInput(attrs={"placeholder": "GoFood, Indomaret, Salary", "autocomplete": "off"}),
             "date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
-            "note": forms.TextInput(attrs={"placeholder": "e.g. Lunch with the team"}),
+            "note": forms.TextInput(attrs={"placeholder": "Lunch with the team"}),
         }
 
     def __init__(self, *args, user, **kwargs):
@@ -143,7 +143,7 @@ class TransferForm(_DateNotInFuture, forms.ModelForm):
         labels = {"from_wallet": "From", "to_wallet": "To", "note": "Note (optional)"}
         widgets = {
             "date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
-            "note": forms.TextInput(attrs={"placeholder": "e.g. Top up for the week"}),
+            "note": forms.TextInput(attrs={"placeholder": "Top up for the week"}),
         }
 
     def __init__(self, *args, user, **kwargs):
@@ -209,7 +209,7 @@ class PlanForm(forms.Form):
     total = AmountField(
         label="Monthly spending budget (Rp)",
         error_messages={"required": PLAN_TOO_SMALL},
-        widget=forms.TextInput(attrs={"placeholder": "e.g. 8.000.000"}),
+        widget=forms.TextInput(attrs={"placeholder": "8.000.000"}),
     )
 
     def __init__(self, *args, user, year, month, **kwargs):
@@ -233,7 +233,7 @@ class CategoryLimitForm(forms.Form):
     limit = AmountField(
         label="Monthly limit (Rp)",
         error_messages={"required": LIMIT_TOO_SMALL},
-        widget=forms.TextInput(attrs={"placeholder": "e.g. 2.400.000"}),
+        widget=forms.TextInput(attrs={"placeholder": "2.400.000"}),
     )
 
     def __init__(self, *args, **kwargs):
@@ -261,7 +261,7 @@ class GoalForm(forms.ModelForm):
     target = AmountField(
         label="Target",
         error_messages={"required": GOAL_TARGET_TOO_SMALL},
-        widget=forms.TextInput(attrs={"placeholder": "e.g. 6.000.000"}),
+        widget=forms.TextInput(attrs={"placeholder": "6.000.000"}),
     )
 
     class Meta:
@@ -270,7 +270,7 @@ class GoalForm(forms.ModelForm):
         labels = {"name": "Name", "deadline": "Deadline (optional)"}
         error_messages = {"name": {"required": "Enter a name for this goal."}}
         widgets = {
-            "name": forms.TextInput(attrs={"placeholder": "e.g. Bali trip, Emergency fund", "autocomplete": "off"}),
+            "name": forms.TextInput(attrs={"placeholder": "Bali trip, Emergency fund", "autocomplete": "off"}),
             "deadline": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
         }
 
@@ -323,7 +323,7 @@ class _GoalMovementForm(_DateNotInFuture, forms.ModelForm):
         labels = {"note": "Note (optional)"}
         widgets = {
             "date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
-            "note": forms.TextInput(attrs={"placeholder": "e.g. After payday"}),
+            "note": forms.TextInput(attrs={"placeholder": "After payday"}),
         }
 
     def __init__(self, *args, user, goal, **kwargs):

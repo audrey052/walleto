@@ -15,7 +15,7 @@ This is the implementation log for this change. It lists what was created or mod
 | Commit | Message | Record |
 |---|---|---|
 | `b8ac963` | feat: add savings goals that move money out of wallets, with progress, status and a detail chart | `add-savings-goals.md` |
-| this commit | fix: show the new goal button only once a goal exists | `goals-single-create-button.md` |
+| `680acc6` | fix: show the new goal button only once a goal exists | `goals-single-create-button.md` |
 
 ## Routes
 

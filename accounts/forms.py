@@ -23,7 +23,7 @@ class RegistrationForm(BaseUserCreationForm):
         fields = ["full_name", "email"]
         widgets = {
             "full_name": forms.TextInput(
-                attrs={"autocomplete": "name", "placeholder": "e.g. Aditya Ramadhan"}
+                attrs={"autocomplete": "name", "placeholder": "Aditya Ramadhan"}
             ),
             "email": forms.EmailInput(
                 attrs={"autocomplete": "email", "placeholder": "you@example.com"}
