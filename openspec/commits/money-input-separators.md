@@ -3,7 +3,7 @@
 **Created:** 2026-11-23
 **Last edited:** 2026-11-23
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `5cec7fa` feat: add dot separators to money inputs while typing
 **Branch:** `main`, parent `c699a64`
 **OpenSpec change:** none (input behavior across existing forms; the money-format spec already accepts "2.000.000")
 **Trigger:** The developer asked for amounts to show dots as they are typed (2000000 → 2.000.000), so they are easier to read.
