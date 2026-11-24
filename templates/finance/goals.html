@@ -24,8 +24,8 @@
     {% with goal=main.goal %}
       {% url 'finance:goal_detail' goal.pk as detail_url %}
       <div data-goal-id="{{ goal.pk }}">
-      {# Main goal card, after the Figma `.savings-feature` (grid 1.8fr / 1fr, 40px padding). #}
-      <section class="panel relative grid gap-8 p-6 transition-colors hover:bg-[#fdfdfa] md:grid-cols-[1.8fr_1fr] md:gap-[50px] md:p-10" aria-labelledby="main-goal-name">
+      {# Main goal card, after the Figma `.savings-feature` (grid 1.8fr / 1fr), a little smaller than Figma (32px padding). #}
+      <section class="panel relative grid gap-6 p-5 transition-colors hover:bg-[#fdfdfa] md:grid-cols-[1.8fr_1fr] md:gap-10 md:p-8" aria-labelledby="main-goal-name">
         {# The whole card opens the goal's history (edit lives there); the buttons sit above this link. #}
         <a href="{{ detail_url }}" class="absolute inset-0 rounded-panel" aria-label="Open {{ goal.name }}"></a>
         <div class="min-w-0">
@@ -35,15 +35,15 @@
                         aria-label="Move {{ goal.name }}. Drag, or use the up and down arrow keys." title="Drag to reorder"
                         @keydown.up.prevent="move($el, -1)" @keydown.down.prevent="move($el, 1)">{% icon "grip" size=16 %}</button>{% endif %}
           </div>
-          <h2 id="main-goal-name" class="mt-3.5 text-[25px] font-semibold tracking-[-0.9px] [overflow-wrap:anywhere]">
+          <h2 id="main-goal-name" class="mt-2.5 text-[22px] font-semibold tracking-[-0.7px] [overflow-wrap:anywhere]">
             {{ goal.name }}
           </h2>
-          <p class="mt-3 flex flex-wrap items-center gap-2 text-caption text-muted">
+          <p class="mt-2 flex flex-wrap items-center gap-2 text-caption text-muted">
             {% if goal.deadline %}By {{ goal.deadline|date:"j M Y" }}{% else %}No deadline{% endif %}
             {% include "finance/_goal_status.html" with summary=main %}
           </p>
-          <p class="mt-7 mb-5 flex flex-wrap items-baseline gap-x-2.5">
-            {% amount main.saved css_class="amount-display" %}
+          <p class="mt-5 mb-4 flex flex-wrap items-baseline gap-x-2.5">
+            {% amount main.saved css_class="amount-display text-[36px]" %}
             <span class="text-caption whitespace-nowrap text-muted">of {{ goal.target|rupiah }}</span>
           </p>
           {% include "finance/_goal_progress.html" with summary=main %}
@@ -51,7 +51,7 @@
             <span>{% if main.reached %}Your goal, reached.{% else %}{{ main.percent }}% of the way there{% endif %}</span>
             <span>{{ main.to_go|rupiah }} to go</span>
           </div>
-          <div class="relative z-10 mt-7 flex w-fit flex-wrap items-center gap-5">
+          <div class="relative z-10 mt-5 flex w-fit flex-wrap items-center gap-5">
             {% if main.reached %}
               <form method="post" action="{% url 'finance:goal_complete' goal.pk %}">
                 {% csrf_token %}
@@ -64,15 +64,15 @@
           </div>
         </div>
         {# Figma ledger lines: 9 rising bars, filled by how much is saved. #}
-        <div class="hidden flex-col justify-between border-l border-border pl-10 md:flex" aria-hidden="true">
-          <span class="text-[57px] leading-none font-normal tracking-[-3px] text-[#d0d7c8] tabular-nums">{{ main.percent }}%</span>
-          <div class="flex h-[100px] items-end gap-[5px]">
+        <div class="hidden flex-col justify-between border-l border-border pl-8 md:flex" aria-hidden="true">
+          <span class="text-[46px] leading-none font-normal tracking-[-2.5px] text-[#d0d7c8] tabular-nums">{{ main.percent }}%</span>
+          <div class="flex h-[80px] items-end gap-[5px]">
             {% for height in ledger_heights %}
-              <div class="w-[13px] rounded-t-[2px] border {% if forloop.counter <= main.lines_filled %}border-[#729174] bg-[#729174]{% else %}border-[#e0e5d6] bg-[#e9ece1]{% endif %}"
+              <div class="w-[11px] rounded-t-[2px] border {% if forloop.counter <= main.lines_filled %}border-[#729174] bg-[#729174]{% else %}border-[#e0e5d6] bg-[#e9ece1]{% endif %}"
                    style="height: {{ height }}%"></div>
             {% endfor %}
           </div>
-          <span class="mt-6 text-caption text-muted">Started {{ goal.start_date|date:"j M Y" }}</span>
+          <span class="mt-4 text-caption text-muted">Started {{ goal.start_date|date:"j M Y" }}</span>
         </div>
       </section>
 

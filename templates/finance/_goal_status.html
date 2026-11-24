@@ -1,4 +1,4 @@
-{# Usage: {% include "finance/_goal_status.html" with summary=summary %} - nothing without a status. #}
-{% if summary.status %}
-  <span class="chip" style="--chip: {% if summary.status == 'on_track' %}var(--color-forest){% elif summary.status == 'behind' %}var(--color-amber){% else %}var(--color-clay){% endif %}">{{ summary.status_label }}</span>
+{# Usage: {% include "finance/_goal_status.html" with summary=summary %} - only "Behind" and "Past deadline"; no label when on track (removed 2026-11-25). #}
+{% if summary.status and summary.status != "on_track" %}
+  <span class="chip" style="--chip: {% if summary.status == 'behind' %}var(--color-amber){% else %}var(--color-clay){% endif %}">{{ summary.status_label }}</span>
 {% endif %}

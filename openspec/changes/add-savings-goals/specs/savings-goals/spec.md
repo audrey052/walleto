@@ -62,11 +62,11 @@ For each goal the app SHALL show the saved amount (deposits minus withdrawals), 
 - **THEN** it shows "Your goal, reached." and Rp0 to go
 
 ### Requirement: Goal status
-A goal with a deadline that is not reached SHALL show a status. Before the deadline it is "On track" when saved × total days ≥ target × elapsed days, else "Behind". Total days run from the start date to the deadline and elapsed days from the start date to today. After the deadline it is "Past deadline". A goal without a deadline or already reached SHALL show no status.
+A goal with a deadline that is not reached SHALL have a status, and SHALL show it only when it is "Behind" or "Past deadline". Before the deadline it is "On track" when saved × total days ≥ target × elapsed days, else "Behind". Total days run from the start date to the deadline and elapsed days from the start date to today. After the deadline it is "Past deadline". A goal without a deadline or already reached SHALL show no status.
 
 #### Scenario: On track
 - **WHEN** a Rp3.000.000 goal started 1 September 2026 with deadline 30 November 2026 (90 days) has Rp2.700.000 saved on 18 November (78 days elapsed)
-- **THEN** it shows "On track", because 2.700.000 × 90 ≥ 3.000.000 × 78
+- **THEN** it is on track, because 2.700.000 × 90 ≥ 3.000.000 × 78, and shows no status label
 
 #### Scenario: Behind
 - **WHEN** the same goal has Rp2.500.000 saved on 18 November

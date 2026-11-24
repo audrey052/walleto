@@ -469,7 +469,8 @@ class GoalPageTests(GoalTestCase):
         # 4.500.000 over November to June (8 months) = 562.500
         self.assertContains(response, "Rp562.500 a month")
         self.assertContains(response, "to reach your target by June 2027.")
-        self.assertContains(response, "On track")
+        self.assertEqual(response.context["main"].status, "on_track")
+        self.assertNotContains(response, "On track")  # no label for an on-track goal
 
     def test_main_card_opens_the_goal(self):
         # The whole card links to the detail page, where Edit lives; no separate links on the card.

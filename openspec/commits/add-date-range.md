@@ -3,7 +3,7 @@
 **Created:** 2026-11-25
 **Last edited:** 2026-11-25
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `fc086f2` feat: pick a date range on home and transactions
 **Branch:** `main`, parent `8a7b492`
 **OpenSpec change:** `add-date-range`, tasks 0.1–5.2
 **Trigger:** The developer asked for the calendar button to select a date range; they chose Home and Transactions (Budget stays monthly) and a calendar with quick picks. Then `/opsx:apply add-date-range`. After the first build they asked to drop the quick picks and keep only dates.

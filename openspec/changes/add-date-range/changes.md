@@ -14,7 +14,7 @@ This is the implementation log for this change. It lists what was created or mod
 
 | Commit | Message | Record |
 |---|---|---|
-| this commit | feat: pick a date range on home and transactions | `add-date-range.md` |
+| `fc086f2` | feat: pick a date range on home and transactions | `add-date-range.md` |
 
 ## Routes
 

@@ -91,6 +91,8 @@ This is the implementation log for this change. It lists what was created or mod
 - **Wallet balances are shown in the wallet dropdown** ("BCA · Rp7.842.500") instead of a separate list in the modal.
 - **The main card's right column shows the percent** where Figma shows the decorative "01". The goal's start date replaces "SMALL STEPS. REAL PROGRESS." (docs/STYLE.md copy rules).
 - **"New goal" in the heading only appears once there is an active goal.** With no goals, the empty state's "Create a goal" is the only create button (developer request after the first commit).
+- **The main card is smaller than Figma** (32px padding, 22px name, 36px amount, smaller ledger lines), at the developer's request on 2026-11-25.
+- **No "On track" label.** Removed on 2026-11-25 at the developer's request; "Behind" and "Past deadline" still show.
 - **The whole main card opens the goal's detail page,** like the other goal rows. "Edit goal" and "View history" were removed from the card on 2026-11-24 at the developer's request; Edit is on the detail page.
 
 ## Revision after the first review (2026-11-24)
