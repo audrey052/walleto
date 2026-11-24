@@ -81,12 +81,13 @@ class AppShellTests(TestCase):
         self.assertContains(response, "Aditya Ramadhan")
         self.assertContains(response, "aditya@example.com")
 
-    def test_topbar_date_follows_jakarta_time(self):
-        # 23:30 UTC on 14 Nov is already 15 Nov in Jakarta (UTC+7).
+    def test_today_follows_jakarta_time_and_is_not_shown(self):
+        # 23:30 UTC on 14 Nov is already 15 Nov in Jakarta (UTC+7). The shell no longer prints the date.
         fixed = datetime(2026, 11, 14, 23, 30, tzinfo=dt_timezone.utc)
         with mock.patch("django.utils.timezone.now", return_value=fixed):
             response = self.client.get(reverse("core:dashboard"))
-        self.assertContains(response, "Sunday, 15 Nov 2026")
+        self.assertEqual(response.context["today"].isoformat(), "2026-11-15")
+        self.assertNotContains(response, "Sunday, 15 Nov 2026")
 
 
 class StyleguideTests(TestCase):

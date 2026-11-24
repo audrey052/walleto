@@ -34,9 +34,12 @@
       <button type="button" @click="open = !open" :aria-expanded="open" aria-label="Account menu"
               class="sidebar-profile flex w-full items-center gap-2.5 border-t border-border py-5 text-left">
         <span class="avatar">{{ user.initials }}</span>
-        <span class="sidebar-label flex min-w-0 flex-1 flex-col">
-          <strong class="truncate text-control font-semibold">{{ user.full_name }}</strong>
-          <small class="truncate text-caption text-muted">{{ user.email }}</small>
+        {# `flex` on an inner span: a display utility on .sidebar-label would beat the collapsed rule that hides it. #}
+        <span class="sidebar-label min-w-0 flex-1">
+          <span class="flex flex-col">
+            <strong class="truncate text-control font-semibold">{{ user.full_name }}</strong>
+            <small class="truncate text-caption text-muted">{{ user.email }}</small>
+          </span>
         </span>
         <span class="sidebar-label text-muted">{% icon "chevron-down" size=15 %}</span>
       </button>
@@ -45,16 +48,16 @@
 
   {# ---------- Workspace ---------- #}
   <div class="workspace">
-    <header class="flex h-16 items-center justify-between gap-4 border-b border-border bg-[#fdfdfa] px-4 md:px-9">
+    {# Phone top bar only: logo and account menu. Desktop has no top bar. #}
+    <header class="flex h-16 items-center justify-between gap-4 border-b border-border bg-[#fdfdfa] px-4 md:hidden">
       <div class="flex min-w-0 items-center gap-4">
-        <a href="{% url 'core:dashboard' %}" class="flex items-center gap-2 md:hidden">
+        <a href="{% url 'core:dashboard' %}" class="flex items-center gap-2">
           {% include "components/logo_mark.html" with css_class="size-7" %}
           <span class="text-[20px] font-extrabold tracking-[-1px]">walleto<span class="text-forest">.</span></span>
         </a>
       </div>
       <div class="flex items-center gap-4">
-        <span class="hidden text-control text-muted sm:inline">{{ today|date:"l, j M Y" }}</span>
-        <div class="relative md:hidden" x-data="{ open: false }" @keydown.escape="open = false" @click.outside="open = false">
+        <div class="relative" x-data="{ open: false }" @keydown.escape="open = false" @click.outside="open = false">
           <button type="button" @click="open = !open" :aria-expanded="open" aria-label="Account menu">
             <span class="avatar">{{ user.initials }}</span>
           </button>
@@ -65,7 +68,7 @@
       </div>
     </header>
 
-    <main class="mx-auto max-w-[1272px] px-4 pt-7 pb-28 md:px-10 md:pt-9 md:pb-16">
+    <main class="mx-auto max-w-[1272px] px-4 pt-7 pb-28 md:px-10 md:pt-8 md:pb-16">
       {% block content %}{% endblock %}
     </main>
   </div>

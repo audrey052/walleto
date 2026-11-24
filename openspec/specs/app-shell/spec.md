@@ -24,11 +24,15 @@ The user SHALL be able to collapse the sidebar to icons only and expand it again
 - **THEN** the sidebar is still collapsed, and each icon shows its section name on hover
 
 ### Requirement: Topbar
-Every signed-in page SHALL show a topbar with today's date in the Asia/Jakarta time zone, formatted like "Saturday, 14 Nov 2026". The topbar SHALL NOT show a breadcrumb.
+On screens 768 pixels and wider there SHALL be no top bar; the page title SHALL be the first thing in the content area. On narrower screens a top bar SHALL show the logo and the account menu. Neither SHALL show a breadcrumb or today's date. "Today" for every page SHALL be the date in the Asia/Jakarta time zone.
 
-#### Scenario: Date follows Jakarta time
+#### Scenario: Today follows Jakarta time
 - **WHEN** a page is opened at 23:30 UTC on 14 November 2026
-- **THEN** the topbar shows "Sunday, 15 Nov 2026"
+- **THEN** the app treats 15 November 2026 as today
+
+#### Scenario: Desktop has no top bar
+- **WHEN** a signed-in page is shown 1440 pixels wide
+- **THEN** there is no top bar and no date, and the page title is level with the logo in the sidebar
 
 ### Requirement: Profile menu
 The bottom of the sidebar SHALL show the user's initials, full name and email. Opening it SHALL show a menu with a "Sign out" action.

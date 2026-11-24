@@ -3,7 +3,7 @@
 **Created:** 2026-11-25
 **Last edited:** 2026-11-25
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `bd904d9` fix: no on track label, smaller main goal card
 **Branch:** `main`, parent `fc086f2`
 **OpenSpec change:** `add-savings-goals` (MVP 4), revision
 **Trigger:** The developer asked to remove the "On track" label from Savings goals, then to make the main goal card a little smaller.
