@@ -42,7 +42,8 @@ One Markdown record per commit, describing what the commit built, why, which fil
 | 34 | `f3a84a3` | [add-dashboard.md](add-dashboard.md) | 5 |
 | 35 | `d4284f7` | [smiling-wallet-logo.md](smiling-wallet-logo.md) | 0 (brand, top bar, sidebar, Home) |
 | 36 | `9ed75f9` | [transfer-from-wallets-only.md](transfer-from-wallets-only.md) | 2 (UI) |
-| 37 | this commit | [goal-card-opens-goal.md](goal-card-opens-goal.md) | 4 |
+| 37 | `9c72adc` | [goal-card-opens-goal.md](goal-card-opens-goal.md) | 4 |
+| 38 | this commit | [archive-add-dashboard.md](archive-add-dashboard.md) | 5 |
 
 Commits made before MVP 0's code (`git init`, `.gitignore`, OpenSpec init) have no record.
 

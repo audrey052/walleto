@@ -21,7 +21,7 @@ A management command SHALL create or reset one demo user with five wallets (BCA,
 - **THEN** every demo wallet ends with a balance of zero or more
 
 ### Requirement: Try the demo account
-The sign-in page SHALL offer "Try demo account". Choosing it SHALL sign the visitor in as the demo user (creating the demo data first if the demo user does not exist) and open the Dashboard with a toast saying they are using the demo account. The action SHALL only work through a form submission.
+The sign-in page SHALL offer "Try demo account". Choosing it SHALL sign the visitor in as the demo user (creating the demo data first if the demo user does not exist) and open Home with a toast saying they are using the demo account. The action SHALL only work through a form submission.
 
 #### Scenario: Visitor tries the demo
 - **WHEN** a visitor on the sign-in page chooses "Try demo account"

@@ -3,7 +3,7 @@
 **Created:** 2026-11-24
 **Last edited:** 2026-11-24
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `9c72adc` fix: open a goal from its card
 **Branch:** `main`, parent `9ed75f9`
 **OpenSpec change:** `add-savings-goals` (MVP 4), revision
 **Trigger:** The developer asked to remove "Edit goal" and "View history" from the main goal card: clicking the card opens the history, and editing happens there.

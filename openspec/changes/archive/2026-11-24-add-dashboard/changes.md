@@ -2,7 +2,7 @@
 
 This is the implementation log for this change. It lists what was created or modified, and where the result differs from `proposal.md`, `design.md` and `tasks.md`. Per-commit detail is in `openspec/commits/`.
 
-- **Status:** implemented, not archived. Still open: the developer's real-browser check.
+- **Status:** archived on 2026-11-24; the delta was synced to `openspec/specs/dashboard/spec.md` right after.
 - **Date:** 2026-11-24
 - **Tests:** 352 passing in about 11 s; 43 new in `finance/tests/test_summary.py` and `finance/tests/test_dashboard.py`.
 - **Validation:**
@@ -13,7 +13,7 @@ This is the implementation log for this change. It lists what was created or mod
 
 | Commit | Message | Record |
 |---|---|---|
-| this commit | feat: add the dashboard | `add-dashboard.md` |
+| `f3a84a3` | feat: add the dashboard | `add-dashboard.md` |
 
 ## Routes
 

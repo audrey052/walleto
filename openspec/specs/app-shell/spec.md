@@ -6,7 +6,7 @@ Defines the shared frame around every signed-in page (navigation, topbar, profil
 ## Requirements
 
 ### Requirement: Sidebar navigation
-Every signed-in page SHALL show a sidebar with the Walleto logo and six sections in this order: Dashboard, Transactions, Wallets, Budget, Savings goals, Assistant. The section of the current page SHALL be visibly marked as active.
+Every signed-in page SHALL show a sidebar with the Walleto logo and six sections in this order: Home, Transactions, Wallets, Budget, Savings goals, Assistant. The section of the current page SHALL be visibly marked as active.
 
 #### Scenario: Navigate between sections
 - **WHEN** a signed-in user selects "Wallets" in the sidebar
@@ -17,14 +17,14 @@ Every signed-in page SHALL show a sidebar with the Walleto logo and six sections
 - **THEN** exactly one sidebar item is marked active
 
 ### Requirement: Collapsible sidebar
-The user SHALL be able to collapse the sidebar to icons only and expand it again. The chosen state SHALL be kept when moving to another page in the same browser.
+The user SHALL be able to collapse the sidebar to icons only and expand it again with a round handle on the sidebar's right edge, which appears while the pointer is over the sidebar or the handle has keyboard focus, and is always shown on touch screens. The chosen state SHALL be kept when moving to another page in the same browser.
 
 #### Scenario: Collapse persists across pages
 - **WHEN** the user collapses the sidebar and then opens another section
 - **THEN** the sidebar is still collapsed, and each icon shows its section name on hover
 
 ### Requirement: Topbar
-Every signed-in page SHALL show a topbar with a sidebar toggle, a breadcrumb ending in the current section name, and today's date in the Asia/Jakarta time zone, formatted like "Saturday, 14 Nov 2026".
+Every signed-in page SHALL show a topbar with today's date in the Asia/Jakarta time zone, formatted like "Saturday, 14 Nov 2026". The topbar SHALL NOT show a breadcrumb.
 
 #### Scenario: Date follows Jakarta time
 - **WHEN** a page is opened at 23:30 UTC on 14 November 2026
@@ -38,7 +38,7 @@ The bottom of the sidebar SHALL show the user's initials, full name and email. O
 - **THEN** the sidebar shows "AR", "Aditya Ramadhan" and that user's email
 
 ### Requirement: Placeholder section pages
-Until a section's feature is built, its page SHALL exist, carry the section title and subtitle from docs/STYLE.md, and show an empty state saying the section is coming soon. The home address SHALL show the Dashboard page.
+Until a section's feature is built, its page SHALL exist, carry the section title and subtitle from docs/STYLE.md, and show an empty state saying the section is coming soon. The home address SHALL show the Home page.
 
 #### Scenario: Unbuilt section
 - **WHEN** a signed-in user opens Savings goals before that feature exists
