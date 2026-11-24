@@ -336,6 +336,29 @@
       margin-left: 76px;
     }
   }
+  /* Round handle in the middle of the sidebar's right edge */
+  .sidebar-handle {
+    @apply absolute top-1/2 -right-3 z-10 -translate-y-1/2 grid size-6 place-items-center rounded-full border border-border bg-surface text-secondary opacity-0 shadow-sm;
+    transition: opacity 0.15s, scale 0.15s, color 0.15s;
+  }
+  .sidebar:hover .sidebar-handle,
+  .sidebar-handle:focus-visible {
+    @apply opacity-100;
+  }
+  .sidebar-handle:hover {
+    @apply scale-110 border-forest-soft text-forest;
+  }
+  .sidebar-handle svg {
+    transition: transform 0.2s;
+  }
+  .is-collapsed .sidebar-handle svg {
+    transform: rotate(180deg);
+  }
+  @media (hover: none) {
+    .sidebar-handle {
+      @apply opacity-100;
+    }
+  }
   .is-collapsed .sidebar {
     width: 76px;
     padding-inline: 12px;

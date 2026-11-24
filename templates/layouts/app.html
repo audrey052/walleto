@@ -6,8 +6,13 @@
 
   {# ---------- Sidebar (768px and up) ---------- #}
   <aside class="sidebar fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-border bg-sidebar pt-8 md:flex">
+    {# Handle on the sidebar's edge: shows when the pointer is over the sidebar, or on keyboard focus. #}
+    <button type="button" class="sidebar-handle" @click="toggle()" :aria-expanded="!collapsed"
+            :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'" aria-label="Collapse sidebar">
+      {% icon "chevron-left" size=14 %}
+    </button>
     <a href="{% url 'core:dashboard' %}" class="sidebar-brand mb-10 flex items-center gap-2.5 px-3">
-      <span class="grid size-8 shrink-0 place-items-center rounded-panel bg-forest text-white">{% icon "wallet" size=18 %}</span>
+      {% include "components/logo_mark.html" %}
       <span class="sidebar-label text-[26px] font-extrabold leading-none tracking-[-1.5px]">walleto<span class="text-forest">.</span></span>
     </a>
 
@@ -42,20 +47,10 @@
   <div class="workspace">
     <header class="flex h-16 items-center justify-between gap-4 border-b border-border bg-[#fdfdfa] px-4 md:px-9">
       <div class="flex min-w-0 items-center gap-4">
-        <button type="button" class="btn-icon -ml-1.5 hidden md:inline-flex" @click="toggle()"
-                :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'" aria-label="Collapse sidebar">
-          {% icon "collapse" size=18 %}
-        </button>
         <a href="{% url 'core:dashboard' %}" class="flex items-center gap-2 md:hidden">
-          <span class="grid size-7 place-items-center rounded-control bg-forest text-white">{% icon "wallet" size=16 %}</span>
+          {% include "components/logo_mark.html" with css_class="size-7" %}
           <span class="text-[20px] font-extrabold tracking-[-1px]">walleto<span class="text-forest">.</span></span>
         </a>
-        <span class="hidden h-4 w-px bg-border md:block"></span>
-        <nav class="hidden items-center gap-3 text-control text-muted md:flex" aria-label="Breadcrumb">
-          <span>My workspace</span>
-          {% icon "chevron-right" size=12 %}
-          <span class="text-ink">{% block breadcrumb %}{% if active_section %}{{ active_section.title }}{% else %}{{ page_title }}{% endif %}{% endblock %}</span>
-        </nav>
       </div>
       <div class="flex items-center gap-4">
         <span class="hidden text-control text-muted sm:inline">{{ today|date:"l, j M Y" }}</span>

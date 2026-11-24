@@ -1,7 +1,7 @@
 {% extends "layouts/app.html" %}
 {% load icons money %}
 
-{% block title %}Dashboard{% endblock %}
+{% block title %}Home{% endblock %}
 
 {% block content %}
   {# Everything below is swapped by the month picker (add-dashboard design decision 6). #}
@@ -9,7 +9,7 @@
     {# Page heading with the month picker, as on Transactions and Budget #}
     <div class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
       <div>
-        <h1>Dashboard</h1>
+        <h1>Home</h1>
         <p class="mt-1.5 text-body text-secondary">{{ active_section.subtitle }}</p>
       </div>
       <div class="flex h-9 w-fit items-center rounded-control border border-border bg-surface">

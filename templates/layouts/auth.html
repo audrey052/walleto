@@ -6,7 +6,7 @@
   {# ---------- Form side ---------- #}
   <div class="flex flex-col px-6 py-8 sm:px-12">
     <a href="{% url 'accounts:login' %}" class="flex items-center gap-2.5">
-      <span class="grid size-8 place-items-center rounded-panel bg-forest text-white">{% icon "wallet" size=18 %}</span>
+      {% include "components/logo_mark.html" %}
       <span class="text-[26px] font-extrabold leading-none tracking-[-1.5px]">walleto<span class="text-forest">.</span></span>
     </a>
     <div class="mx-auto flex w-full max-w-[380px] flex-1 flex-col justify-center py-12">

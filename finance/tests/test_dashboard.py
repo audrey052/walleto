@@ -38,6 +38,8 @@ class DashboardPageTests(SummaryFixtures, TestCase):
         self.add(5_847_500)
         response = self.get()
         self.assertContains(response, "Remaining this month")
+        self.assertContains(response, "<h1>Home</h1>", html=True)
+        self.assertContains(response, "<title>Home · Walleto</title>", html=True)
         self.assertContains(response, '<span class="currency">Rp</span>2.152.500', html=False)
         self.assertContains(response, "Rp5.847.500</strong> of Rp8.000.000 planned", html=False)
         # Rp2.152.500 left at Rp50.000 a day: 43 days of meals.

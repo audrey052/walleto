@@ -7,7 +7,7 @@ SECTIONS = [
     {
         "key": "dashboard",
         "short": "Home",
-        "title": "Dashboard",
+        "title": "Home",  # same as the phone bar's short label
         "subtitle": "Your money this month at a glance.",
         "icon": "dashboard",
         "url_name": "core:dashboard",

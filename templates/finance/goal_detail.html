@@ -3,7 +3,6 @@
 
 {% block title %}{{ goal.name }}{% endblock %}
 {% block head %}<script src="{% static 'vendor/apexcharts.min.js' %}" defer></script>{% endblock %}
-{% block breadcrumb %}Savings goals{% endblock %}
 
 {% block content %}
   {% url 'finance:goal_detail' goal.pk as here %}

@@ -3,7 +3,7 @@
 **Created:** 2026-11-24
 **Last edited:** 2026-11-24
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `f3a84a3` feat: add the dashboard
 **Branch:** `main`, parent `352fe67`
 **OpenSpec change:** `add-dashboard` (MVP 5), tasks 1.1–3.2
 **Trigger:** `/opsx:apply add-dashboard` after the developer trimmed the proposal (no wallet filter, insight row or recent transactions).
