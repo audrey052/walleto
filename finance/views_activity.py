@@ -1,7 +1,6 @@
 """Transactions page, and add / edit / delete for transactions and transfers."""
 
 import csv
-from datetime import date
 from urllib.parse import urlencode
 
 from django.contrib import messages
@@ -18,8 +17,7 @@ from . import budgets
 from .forms import TransactionForm, TransferForm
 from .models import Budget, Category, GoalContribution, Transaction, Transfer, Wallet
 from .months import month_param as _month_param
-from .months import parse_month as _parse_month
-from .months import shift as _shift
+from .periods import Period, parse_period
 
 PAGE_SIZE = 50
 
@@ -33,22 +31,23 @@ def _int_or_none(value):
         return None
 
 
-def transactions_url(year, month, *, view="finance:transactions", **filters):
-    params = {"month": _month_param(year, month)}
+def transactions_url(period, *, view="finance:transactions", **filters):
+    """Transactions (or its export) for a period, keeping the filters (add-date-range design decision 3)."""
+    params = period.query()
     params.update({k: v for k, v in filters.items() if v})
     return f"{reverse(view)}?{urlencode(params)}"
 
 
-# ---------- shared month + filter query ----------
+# ---------- shared period + filter query ----------
 
 def _activity(request):
-    """The selected month and filters, the filtered querysets and the merged entries.
+    """The selected period and filters, the filtered querysets and the merged entries.
 
     Used by the page and by the CSV export, so both always show the same rows.
     """
     user = request.user
     today = timezone.localdate()
-    year, month = _parse_month(request.GET.get("month"), today)
+    period = parse_period(request.GET, today)
 
     wallets = Wallet.objects.for_user(user)
     categories = Category.objects.for_user(user)
@@ -57,11 +56,11 @@ def _activity(request):
     query = (request.GET.get("q") or "").strip()
 
     transactions = (
-        Transaction.objects.for_user(user).in_month(year, month).select_related("wallet", "category")
+        Transaction.objects.for_user(user).in_period(period.start, period.end).select_related("wallet", "category")
     )
-    transfers = Transfer.objects.for_user(user).in_month(year, month).select_related("from_wallet", "to_wallet")
+    transfers = Transfer.objects.for_user(user).in_period(period.start, period.end).select_related("from_wallet", "to_wallet")
     # Goal deposits and withdrawals, deleted goals included (add-savings-goals design decision 9).
-    goal_moves = GoalContribution.objects.for_user(user).in_month(year, month).select_related("goal", "wallet")
+    goal_moves = GoalContribution.objects.for_user(user).in_period(period.start, period.end).select_related("goal", "wallet")
     if wallet:
         transactions = transactions.filter(wallet=wallet)
         transfers = transfers.touching(wallet)
@@ -84,7 +83,7 @@ def _activity(request):
     entries.sort(key=lambda pair: (pair[0].date, pair[0].created_at, pair[0].pk), reverse=True)
 
     return {
-        "today": today, "year": year, "month": month,
+        "today": today, "period": period,
         "wallets": wallets, "categories": categories,
         "wallet": wallet, "category": category, "query": query,
         "transactions": transactions, "entries": entries,
@@ -100,40 +99,38 @@ def _activity(request):
 
 def transaction_list(request):
     data = _activity(request)
-    today, year, month = data["today"], data["year"], data["month"]
+    today, period = data["today"], data["period"]
     wallets, categories = data["wallets"], data["categories"]
     wallet, category, query = data["wallet"], data["category"], data["query"]
     transactions, entries, filters = data["transactions"], data["entries"], data["filters"]
 
     page = Paginator(entries, PAGE_SIZE).get_page(request.GET.get("page"))
 
-    prev_year, prev_month = _shift(year, month, -1)
-    next_year, next_month = _shift(year, month, 1)
-    is_current = (year, month) == (today.year, today.month)
+    next_month = period.next_month(today)
 
     def page_url(number):
-        return transactions_url(year, month, **filters, page=number)
+        return transactions_url(period, **filters, page=number)
 
     context = {
-        "month_start": date(year, month, 1),
-        "month_param": _month_param(year, month),
-        "is_current_month": is_current,
-        "prev_url": transactions_url(prev_year, prev_month, **filters),
-        "next_url": None if is_current else transactions_url(next_year, next_month, **filters),
+        "period": period,
+        "prev_url": transactions_url(period.prev_month(), **filters),
+        "next_url": transactions_url(next_month, **filters) if next_month else None,
+        "period_target": "#transactions-page",
+        "period_fields": {k: v for k, v in filters.items() if v},
         "summary": transactions.totals(),
         "page": page,
         "page_prev_url": page_url(page.previous_page_number()) if page.has_previous() else None,
         "page_next_url": page_url(page.next_page_number()) if page.has_next() else None,
         "entries": page.object_list,
         "entry_count": len(entries),
-        "export_url": transactions_url(year, month, view="finance:transactions_export", **filters),
+        "export_url": transactions_url(period, view="finance:transactions_export", **filters),
         "wallet_options": wallets.order_by("is_archived", "created_at"),
         "category_options": categories,
         "selected_wallet": wallet,
         "selected_category": category,
         "query": query,
         "has_filters": bool(wallet or category or query),
-        "clear_url": transactions_url(year, month),
+        "clear_url": transactions_url(period),
         "has_wallets": wallets.active().exists(),
         "current_url": request.get_full_path(),
     }
@@ -147,9 +144,9 @@ def _csv_text(value):
 
 
 def transaction_export(request):
-    """The rows the page shows for the same month and filters, as CSV (all pages)."""
+    """The rows the page shows for the same period and filters, as CSV (all pages)."""
     data = _activity(request)
-    filename = f"walleto-transactions-{_month_param(data['year'], data['month'])}.csv"
+    filename = f"walleto-transactions-{data['period'].slug}.csv"
     response = HttpResponse(content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     response.write("﻿")  # BOM so Excel opens UTF-8 (→, é) correctly
@@ -220,7 +217,7 @@ def _own_transaction(request, pk):
 
 
 def _after_save_url(request, record):
-    return safe_next(request, transactions_url(record.date.year, record.date.month))
+    return safe_next(request, transactions_url(Period.for_month(record.date.year, record.date.month)))
 
 
 def _transaction_form(request, form, *, title, action, submit_label, delete_url=None):

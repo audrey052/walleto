@@ -1,17 +1,19 @@
-"""Dashboard page (dashboard spec, add-dashboard design decision 6)."""
+"""Home page (dashboard spec, add-dashboard design decision 6, add-date-range design decisions 4-7)."""
 
-from datetime import date
+from urllib.parse import urlencode
 
 from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
 
 from . import summary as summary_service
-from .months import month_param, parse_month, shift
+from .months import month_param
+from .periods import Period, parse_period
+from .views_activity import transactions_url
 
 
-def dashboard_url(year, month):
-    return f"{reverse('core:dashboard')}?month={month_param(year, month)}"
+def dashboard_url(period):
+    return f"{reverse('core:dashboard')}?{urlencode(period.query())}"
 
 
 def change(tenths):
@@ -23,31 +25,59 @@ def change(tenths):
 
 
 AXIS_DAYS = (1, 5, 10, 15, 20, 25)
+LONG_RANGE = 31
 
 
 def axis_labels(bars):
-    """x-axis labels: days 1, 5, 10, 15, 20, 25, the last day and today, but a
-    fixed day right next to today is left out so the two never run together."""
-    today = next((bar.day.day for bar in bars if bar.is_today), None)
-    last = len(bars)
+    """x-axis labels. Today, the first and the last day are always candidates;
+    up to 31 bars also get days 1, 5, 10, 15, 20 and 25, longer ranges the first
+    day of each month. A label right next to one already shown is left out, so
+    two never run together ("2425")."""
+    count = len(bars)
+    if not count:
+        return []
+    today = next((i for i, bar in enumerate(bars) if bar.is_today), None)
+    crosses_months = (bars[0].day.year, bars[0].day.month) != (bars[-1].day.year, bars[-1].day.month)
+
+    shown = {today} if today is not None else set()
+    for i in (0, count - 1):
+        if today is None or abs(i - today) > 1:
+            shown.add(i)
+    if count > LONG_RANGE:
+        candidates = [i for i, bar in enumerate(bars) if bar.day.day == 1]
+    else:
+        candidates = [i for i, bar in enumerate(bars) if bar.day.day in AXIS_DAYS]
+    for i in candidates:
+        if all(abs(i - j) > 1 for j in shown):
+            shown.add(i)
+
     labels = []
-    for bar in bars:
-        day = bar.day.day
-        shown = bar.is_today or (
-            (day in AXIS_DAYS or day == last) and (today is None or abs(day - today) > 1)
-        )
-        labels.append({"text": f"{day:02d}" if shown else "", "is_today": bar.is_today})
+    for i, bar in enumerate(bars):
+        text = ""
+        if i in shown:
+            day = bar.day
+            with_month = crosses_months and (i == 0 or day.day == 1)
+            text = f"{day.day} {day.strftime('%b')}" if with_month else f"{day.day:02d}"
+        labels.append({"text": text, "is_today": bar.is_today})
     return labels
+
+
+def chart_footer(result, today):
+    """ "01–24 Nov 2026" for a month (up to today in the current one), else the period's label."""
+    period = result.period
+    if not period.is_month:
+        return period.label
+    last = today.day if result.is_current else period.end.day
+    return f"01–{last:02d} {period.start.strftime('%b %Y')}"
 
 
 def dashboard(request):
     today = timezone.localdate()
-    year, month = parse_month(request.GET.get("month"), today)
-    result = summary_service.month_summary(request.user, year, month, today)
+    period = parse_period(request.GET, today)
+    result = summary_service.period_summary(request.user, period, today)
 
-    prev_year, prev_month = shift(year, month, -1)
-    next_year, next_month = shift(year, month, 1)
-    month_query = month_param(year, month)
+    plan_month = Period.for_month(period.end.year, period.end.month)
+    next_month = period.next_month(today)
     metrics = [
         {
             "kind": "income", "label": "Total income", "value": result.income,
@@ -66,14 +96,20 @@ def dashboard(request):
         "finance/dashboard.html",
         {
             "s": result,
+            "period": period,
             "daily_meal": summary_service.DAILY_MEAL,
             "metrics": metrics,
             "axis_labels": axis_labels(result.chart.bars),
-            "chart_last_day": today.day if result.is_current else len(result.daily),
-            "month_start": date(year, month, 1),
-            "prev_url": dashboard_url(prev_year, prev_month),
-            "next_url": None if result.is_current else dashboard_url(next_year, next_month),
-            "budget_url": f"{reverse('finance:budget')}?month={month_query}",
-            "transactions_url": f"{reverse('finance:transactions')}?month={month_query}",
+            "chart_footer": chart_footer(result, today),
+            "month_start": period.start,
+            "prev_url": dashboard_url(period.prev_month()),
+            "next_url": dashboard_url(next_month) if next_month else None,
+            "period_target": "#dashboard",
+            "period_action": reverse("core:dashboard"),
+            "period_fields": {},
+            "plan_month": plan_month,
+            "plan_month_url": dashboard_url(plan_month),
+            "budget_url": f"{reverse('finance:budget')}?month={month_param(plan_month.start.year, plan_month.start.month)}",
+            "transactions_url": transactions_url(period),
         },
     )

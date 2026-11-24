@@ -165,6 +165,105 @@ document.addEventListener("alpine:init", () => {
     },
   }));
 
+  // Date range popover (period-picker spec, add-date-range design decision 6).
+  // Draws a Monday-first month grid; the first click is the start, the second the
+  // end, which fills the From/To fields and submits the form (HTMX swaps the page).
+  // The server applies every rule (no future days, 92 days at most, whole month).
+  const MONTHS = ["January", "February", "March", "April", "May", "June", "July",
+    "August", "September", "October", "November", "December"];
+  const SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const isoDate = (y, m, d) => `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+
+  Alpine.data("periodPicker", () => ({
+    ready: false,
+    open: false,
+    start: "",
+    end: "",
+    today: "",
+    anchor: null, // first click, waiting for the second
+    hover: null,
+    viewYear: 0,
+    viewMonth: 0, // 0-11
+    init() {
+      const data = this.$el.dataset;
+      this.start = data.start;
+      this.end = data.end;
+      this.today = data.today;
+      const [year, month] = this.end.split("-").map(Number);
+      this.viewYear = year;
+      this.viewMonth = month - 1;
+      this.ready = true;
+    },
+    get title() {
+      return `${MONTHS[this.viewMonth]} ${this.viewYear}`;
+    },
+    get canStepForward() {
+      return isoDate(this.viewYear, this.viewMonth, 1) < this.today.slice(0, 8) + "01";
+    },
+    get hint() {
+      return this.anchor ? "Now choose the last day." : "Choose the first day.";
+    },
+    get cells() {
+      const first = new Date(Date.UTC(this.viewYear, this.viewMonth, 1));
+      const blanks = (first.getUTCDay() + 6) % 7; // Monday first
+      const days = new Date(Date.UTC(this.viewYear, this.viewMonth + 1, 0)).getUTCDate();
+      const cells = [];
+      for (let i = 0; i < blanks; i++) cells.push({ key: `b${i}`, iso: "", day: "", disabled: true, label: "" });
+      for (let d = 1; d <= days; d++) {
+        const iso = isoDate(this.viewYear, this.viewMonth, d);
+        cells.push({ key: iso, iso, day: d, disabled: iso > this.today, label: `${d} ${SHORT[this.viewMonth]} ${this.viewYear}` });
+      }
+      return cells;
+    },
+    // The range to highlight: the chosen one, or the one being picked.
+    range() {
+      if (this.anchor) {
+        const other = this.hover || this.anchor;
+        return other < this.anchor ? [other, this.anchor] : [this.anchor, other];
+      }
+      // The current month runs to its last day; only highlight up to today.
+      return [this.start, this.end > this.today ? this.today : this.end];
+    },
+    isSelected(cell) {
+      const [from, to] = this.range();
+      return Boolean(cell.iso) && (cell.iso === from || cell.iso === to);
+    },
+    dayClass(cell) {
+      if (!cell.iso) return "is-blank";
+      const [from, to] = this.range();
+      return {
+        "is-edge": cell.iso === from || cell.iso === to,
+        "is-between": cell.iso > from && cell.iso < to,
+        "is-today": cell.iso === this.today,
+      };
+    },
+    step(delta) {
+      if (delta > 0 && !this.canStepForward) return;
+      const index = this.viewYear * 12 + this.viewMonth + delta;
+      this.viewYear = Math.floor(index / 12);
+      this.viewMonth = index % 12;
+    },
+    pick(iso) {
+      if (!iso || iso > this.today) return;
+      if (!this.anchor) {
+        this.anchor = iso;
+        this.hover = iso;
+        return;
+      }
+      const [from, to] = iso < this.anchor ? [iso, this.anchor] : [this.anchor, iso];
+      this.anchor = null;
+      this.$refs.from.value = from;
+      this.$refs.to.value = to;
+      this.close();
+      this.$refs.form.requestSubmit();
+    },
+    close() {
+      this.anchor = null;
+      this.hover = null;
+      if (this.$refs.details) this.$refs.details.open = false;
+    },
+  }));
+
   // Toast that closes itself after about four seconds.
   Alpine.data("toast", () => ({
     visible: true,

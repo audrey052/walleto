@@ -4,24 +4,18 @@
 {% block title %}Transactions{% endblock %}
 
 {% block content %}
+  {# Everything below is swapped when the period changes (add-date-range design decision 6). #}
+  <div id="transactions-page">
   {# Page heading with the month picker and actions, as in the Figma design #}
   <div class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
     <div>
       <h1>Transactions</h1>
       <p class="mt-1.5 text-body text-secondary">{{ active_section.subtitle }}</p>
     </div>
-    <div class="flex flex-wrap items-center gap-2.5">
-      <div class="flex h-9 items-center rounded-control border border-border bg-surface">
-        <a href="{{ prev_url }}" class="mx-0.5 grid size-7 place-items-center rounded-chip text-secondary hover:bg-forest-tint hover:text-forest" aria-label="Previous month">{% icon "chevron-left" size=16 %}</a>
-        <span class="flex min-w-[150px] items-center justify-center gap-2 text-control font-medium">
-          <span class="text-muted">{% icon "calendar" size=15 %}</span>{{ month_start|date:"F Y" }}
-        </span>
-        {% if next_url %}
-          <a href="{{ next_url }}" class="mx-0.5 grid size-7 place-items-center rounded-chip text-secondary hover:bg-forest-tint hover:text-forest" aria-label="Next month">{% icon "chevron-right" size=16 %}</a>
-        {% else %}
-          <span class="mx-0.5 grid size-7 place-items-center text-secondary opacity-30" aria-hidden="true">{% icon "chevron-right" size=16 %}</span>
-        {% endif %}
-      </div>
+    {# The date button and "Add transaction" share one width (equal grid columns). #}
+    <div class="grid w-fit auto-cols-fr items-center gap-2.5 sm:grid-flow-col">
+      {% url 'finance:transactions' as period_action %}
+      {% include "components/period_picker.html" with picker_width="w-full" %}
       {# Hidden while the empty state below shows its own "Add transaction", so there is only one. #}
       {% if entries or has_filters or not has_wallets %}
         <a href="{% url 'finance:transaction_create' %}" class="btn btn-primary"
@@ -38,7 +32,7 @@
           class="flex flex-wrap items-center gap-2.5 px-4 pt-5 pb-5 md:flex-nowrap md:gap-3 md:px-6"
           hx-get="{% url 'finance:transactions' %}" hx-target="#results" hx-select="#results" hx-swap="outerHTML"
           hx-push-url="true" hx-trigger="change, input changed delay:300ms from:find input[name=q]">
-      <input type="hidden" name="month" value="{{ month_param }}">
+      {% for name, value in period.query.items %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
       <label class="flex h-9 w-full items-center gap-2.5 rounded-control border border-border bg-surface px-3 text-muted focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-forest md:max-w-[340px] md:flex-1">
         {% icon "search" size=17 %}
         <input type="search" name="q" value="{{ query }}" placeholder="Search transactions…"
@@ -75,7 +69,7 @@
       {# Summary line (transfers excluded from income and expenses) #}
       <div class="flex flex-col gap-2 px-4 pb-5 text-control text-muted sm:flex-row sm:items-center sm:justify-between md:px-6">
         <span>
-          {{ entry_count }} transaction{{ entry_count|pluralize }} in {{ month_start|date:"F Y" }}
+          {{ entry_count }} transaction{{ entry_count|pluralize }} in {{ period.label }}
           {% if has_filters %}· <a href="{{ clear_url }}" class="btn-text">Clear filters</a>{% endif %}
         </span>
         <span class="flex flex-wrap gap-x-5 gap-y-1">
@@ -198,7 +192,7 @@
         <div class="empty-state border-t border-border">
           <span class="empty-state-icon">{% icon "transactions" size=24 %}</span>
           <h2>No transactions here yet.</h2>
-          <p class="mt-2 max-w-sm text-body text-secondary">Try another search or filter for {{ month_start|date:"F Y" }}.</p>
+          <p class="mt-2 max-w-sm text-body text-secondary">Try another search or filter for {{ period.label }}.</p>
           <a href="{{ clear_url }}" class="btn mt-6">Clear filters</a>
         </div>
       {% elif not has_wallets %}
@@ -211,7 +205,7 @@
       {% else %}
         <div class="empty-state border-t border-border">
           <span class="empty-state-icon">{% icon "transactions" size=24 %}</span>
-          <h2>No transactions in {{ month_start|date:"F Y" }}</h2>
+          <h2>No transactions in {{ period.label }}</h2>
           <p class="mt-2 max-w-sm text-body text-secondary">Add what you spent or received to see where your money goes.</p>
           <a href="{% url 'finance:transaction_create' %}" class="btn btn-primary mt-6"
              hx-get="{% url 'finance:transaction_create' %}" hx-target="#modal-root">{% icon "plus" size=16 %} Add transaction</a>
@@ -221,4 +215,5 @@
   </section>
 
   <div id="modal-root"></div>
+  </div>
 {% endblock %}

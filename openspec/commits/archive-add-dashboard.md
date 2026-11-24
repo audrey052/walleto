@@ -3,7 +3,7 @@
 **Created:** 2026-11-24
 **Last edited:** 2026-11-24
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `8a7b492` chore: archive add-dashboard, sync specs
 **Branch:** `main`, parent `9c72adc`
 **OpenSpec change:** `add-dashboard` (MVP 5), closing it
 **Trigger:** `/opsx:archive add-dashboard`. The developer first chose "Archive without syncing", then asked to sync the spec after all, together with `app-shell`.

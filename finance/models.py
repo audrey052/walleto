@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 from django.conf import settings
 from django.db import models
@@ -186,7 +186,11 @@ class TransactionQuerySet(models.QuerySet):
 
     def in_month(self, year, month):
         start, end = month_bounds(year, month)
-        return self.filter(date__gte=start, date__lt=end)
+        return self.in_period(start, end - timedelta(days=1))
+
+    def in_period(self, start, end):
+        """Both days included (add-date-range design decision 3)."""
+        return self.filter(date__gte=start, date__lte=end)
 
     def search(self, text):
         text = (text or "").strip()
@@ -261,7 +265,11 @@ class TransferQuerySet(models.QuerySet):
 
     def in_month(self, year, month):
         start, end = month_bounds(year, month)
-        return self.filter(date__gte=start, date__lt=end)
+        return self.in_period(start, end - timedelta(days=1))
+
+    def in_period(self, start, end):
+        """Both days included (add-date-range design decision 3)."""
+        return self.filter(date__gte=start, date__lte=end)
 
     def touching(self, wallet):
         return self.filter(Q(from_wallet=wallet) | Q(to_wallet=wallet))
@@ -432,7 +440,11 @@ class GoalContributionQuerySet(models.QuerySet):
 
     def in_month(self, year, month):
         start, end = month_bounds(year, month)
-        return self.filter(date__gte=start, date__lt=end)
+        return self.in_period(start, end - timedelta(days=1))
+
+    def in_period(self, start, end):
+        """Both days included (add-date-range design decision 3)."""
+        return self.filter(date__gte=start, date__lte=end)
 
     def touching(self, wallet):
         return self.filter(wallet=wallet)

@@ -1,23 +1,25 @@
-"""The Dashboard's monthly summary (dashboard spec, add-dashboard design decisions 1 and 2).
+"""The Dashboard's summary (dashboard spec, add-dashboard design decisions 1 and 2,
+add-date-range design decision 4).
 
-`month_summary()` computes every Dashboard figure for one user and one month, so
-the view only displays it and the Assistant (MVP 7) can reuse it. All of it is
-integer math on whole Rupiah, built on the same querysets and `month_budget`
-as the Transactions and Budget pages so the numbers match.
+`period_summary()` computes every Dashboard figure for one user and one period
+(a whole month or a range of days), so the view only displays it and the
+Assistant (MVP 7) can reuse it. All of it is integer math on whole Rupiah, built
+on the same querysets and `month_budget` as the Transactions and Budget pages so
+the numbers match. The monthly plan only applies to a whole month; it is never
+prorated to a range.
 """
 
 from __future__ import annotations
 
-import calendar
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 
 from django.db.models import Q, Sum
 from django.db.models.functions import Coalesce
 
 from . import budgets
-from .models import Category, Transaction, month_bounds
-from .months import shift
+from .models import Category, Transaction
+from .periods import Period
 
 EMPTY_CHART_TOP = 100_000
 
@@ -47,6 +49,7 @@ class CategoryLine:
     limit: int | None
     percent: int | None
     bar: int  # bar width in percent: the budget used, or the share of the largest category without a limit
+    share: int | None = None  # a range's share of its expenses (no budget to compare with)
 
 
 @dataclass(frozen=True)
@@ -67,10 +70,10 @@ class DailyChart:
 
 
 @dataclass(frozen=True)
-class MonthSummary:
-    year: int
-    month: int
-    is_current: bool
+class PeriodSummary:
+    period: Period
+    is_month: bool
+    is_current: bool  # the period includes today
     income: int
     expense: int
     prev_income: int
@@ -83,7 +86,7 @@ class MonthSummary:
     has_plan: bool
     plan_percent: int
     projection: Projection | None
-    daily: list  # [(date, expense)] for every day of the month
+    daily: list  # [(date, expense)] for every day of the period
     daily_budget: int | None
     chart: DailyChart
     categories: list
@@ -91,6 +94,14 @@ class MonthSummary:
     @property
     def over_by(self):
         return max(-self.remaining, 0)
+
+    @property
+    def compare_label(self):
+        """What the change is measured against: "vs. last month", "vs. previous 15 days"."""
+        if self.is_month:
+            return "vs. last month"
+        days = self.period.days
+        return "vs. previous day" if days == 1 else f"vs. previous {days} days"
 
 
 # ---------- pure helpers ----------
@@ -161,6 +172,16 @@ def daily_chart(daily, daily_budget, *, today):
     return DailyChart(bars=bars, top=top, y_labels=labels, budget_line=line)
 
 
+def range_category_lines(rows):
+    """For a range: [(category, spent)] largest first, with each one's share of the total."""
+    total = sum(spent for _, spent in rows)
+    largest = rows[0][1] if rows else 0
+    return [
+        CategoryLine(category, spent, None, None, spent * 100 // largest, share=spent * 100 // total)
+        for category, spent in rows
+    ]
+
+
 def category_lines(month_plan):
     """Expense categories with spending, largest first, with limit and percent."""
     lines = [(row.category, row.spent, row.limit) for row in month_plan.rows if row.spent > 0]
@@ -175,15 +196,14 @@ def category_lines(month_plan):
     return result
 
 
-# ---------- one month, from the database ----------
+# ---------- one period, from the database ----------
 
-def _two_month_totals(user, year, month):
-    """(income, expense, prev_income, prev_expense) for the month and the month before, in one query."""
-    prev_start = month_bounds(*shift(year, month, -1))[0]
-    start, end = month_bounds(year, month)
-    this, prev = Q(date__gte=start), Q(date__lt=start)
+def _two_period_totals(user, period):
+    """(income, expense, prev_income, prev_expense) for the period and the one before, in one query."""
+    before = period.previous()
+    this, prev = Q(date__gte=period.start), Q(date__lt=period.start)
     income, expense = Q(kind=Category.Kind.INCOME), Q(kind=Category.Kind.EXPENSE)
-    row = Transaction.objects.for_user(user).filter(date__gte=prev_start, date__lt=end).aggregate(
+    row = Transaction.objects.for_user(user).in_period(before.start, period.end).aggregate(
         income=Coalesce(Sum("amount", filter=this & income), 0),
         expense=Coalesce(Sum("amount", filter=this & expense), 0),
         prev_income=Coalesce(Sum("amount", filter=prev & income), 0),
@@ -192,34 +212,62 @@ def _two_month_totals(user, year, month):
     return row["income"], row["expense"], row["prev_income"], row["prev_expense"]
 
 
-def _daily_expenses(user, year, month):
+def _daily_expenses(user, period):
     rows = (
-        Transaction.objects.for_user(user).in_month(year, month).expense()
+        Transaction.objects.for_user(user).in_period(period.start, period.end).expense()
         .order_by().values("date").annotate(total=Sum("amount"))
     )
     by_day = {row["date"]: row["total"] for row in rows}
-    days = calendar.monthrange(year, month)[1]
-    return [(date(year, month, d), by_day.get(date(year, month, d), 0)) for d in range(1, days + 1)]
+    days = [period.start + timedelta(days=n) for n in range(period.days)]
+    return [(day, by_day.get(day, 0)) for day in days]
 
 
-def month_summary(user, year, month, today):
-    income, expense, prev_income, prev_expense = _two_month_totals(user, year, month)
+def _range_categories(user, period):
+    """[(category, spent)] for a range's expense categories with spending, in one query."""
+    categories = (
+        Category.objects.filter(
+            transactions__user=user,
+            transactions__kind=Category.Kind.EXPENSE,
+            transactions__date__gte=period.start,
+            transactions__date__lte=period.end,
+        )
+        .annotate(spent=Sum("transactions__amount"))
+        .order_by("-spent", "name")
+    )
+    return [(category, category.spent) for category in categories]
 
-    plan = budgets.month_budget(user, year, month, today)
-    days = calendar.monthrange(year, month)[1]
-    daily = _daily_expenses(user, year, month)
-    daily_budget = plan.plan // days if plan.has_plan else None
 
-    return MonthSummary(
-        year=year,
-        month=month,
-        is_current=(year, month) == (today.year, today.month),
+def period_summary(user, period, today):
+    income, expense, prev_income, prev_expense = _two_period_totals(user, period)
+    daily = _daily_expenses(user, period)
+    common = dict(
+        period=period,
+        is_month=period.is_month,
+        is_current=period.start <= today <= period.end,
         income=income,
         expense=expense,
         prev_income=prev_income,
         prev_expense=prev_expense,
         income_change_tenths=change_tenths(income, prev_income),
         expense_change_tenths=change_tenths(expense, prev_expense),
+        daily=daily,
+    )
+
+    if not period.is_month:
+        return PeriodSummary(
+            **common,
+            plan=0, plan_spent=0, remaining=0, has_plan=False, plan_percent=0,
+            projection=None,
+            daily_budget=None,
+            chart=daily_chart(daily, None, today=today),
+            categories=range_category_lines(_range_categories(user, period)),
+        )
+
+    year, month = period.month
+    plan = budgets.month_budget(user, year, month, today)
+    daily_budget = plan.plan // period.days if plan.has_plan else None
+    return PeriodSummary(
+        **common,
         plan=plan.plan,
         plan_spent=plan.spent,
         remaining=plan.remaining,
@@ -229,8 +277,12 @@ def month_summary(user, year, month, today):
             year=year, month=month, today=today,
             plan=plan.plan, expense=plan.spent, has_plan=plan.has_plan,
         ),
-        daily=daily,
         daily_budget=daily_budget,
         chart=daily_chart(daily, daily_budget, today=today),
         categories=category_lines(plan),
     )
+
+
+def month_summary(user, year, month, today):
+    """`period_summary` for a whole month."""
+    return period_summary(user, Period.for_month(year, month), today)

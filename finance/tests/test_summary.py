@@ -7,6 +7,7 @@ from django.urls import reverse
 
 from finance import summary
 from finance.models import Budget, Category, GoalContribution, SavingsGoal, Transaction, Transfer, Wallet
+from finance.periods import Period
 from finance.summary import Projection, change_tenths, month_summary, projection
 
 from .test_views import make_user
@@ -234,3 +235,62 @@ class FiguresMatchTests(SummaryFixtures, TestCase):
             self.add(10_000, day=date(2026, 11, day))
         with self.assertNumQueries(5):
             month_summary(self.user, 2026, 11, TODAY)
+
+
+class PeriodSummaryTests(SummaryFixtures, TestCase):
+    """add-date-range: Home for a range of days (today is 15 Nov 2026)."""
+
+    RANGE = Period(date(2026, 11, 1), date(2026, 11, 15))
+
+    def test_change_against_the_previous_days(self):
+        # 1-15 Nov (15 days) against 17-31 Oct.
+        self.add(1_100_000, day=date(2026, 11, 3))
+        self.add(1_000_000, day=date(2026, 10, 20))
+        self.add(5_000_000, day=date(2026, 10, 16))  # just before the previous 15 days
+        result = summary.period_summary(self.user, self.RANGE, TODAY)
+        self.assertEqual((result.expense, result.prev_expense), (1_100_000, 1_000_000))
+        self.assertEqual(result.expense_change_tenths, 100)
+        self.assertEqual(result.compare_label, "vs. previous 15 days")
+
+    def test_compare_labels(self):
+        self.assertEqual(summary.period_summary(self.user, Period(TODAY, TODAY), TODAY).compare_label, "vs. previous day")
+        self.assertEqual(month_summary(self.user, 2026, 11, TODAY).compare_label, "vs. last month")
+
+    def test_range_bars(self):
+        self.limit(self.food, 9_000_000)
+        week = Period(date(2026, 11, 9), date(2026, 11, 15))
+        result = summary.period_summary(self.user, week, TODAY)
+        self.assertEqual([bar.day.day for bar in result.chart.bars], [9, 10, 11, 12, 13, 14, 15])
+        self.assertIsNone(result.chart.budget_line)
+        self.assertTrue(result.chart.bars[-1].is_today)
+
+    def test_share_in_a_range(self):
+        self.limit(self.food, 2_000_000)
+        self.add(600_000)
+        self.add(400_000, cat=self.transport)
+        lines = summary.period_summary(self.user, self.RANGE, TODAY).categories
+        self.assertEqual([(line.category, line.share, line.percent) for line in lines], [(self.food, 60, None), (self.transport, 40, None)])
+
+    def test_a_range_has_no_plan(self):
+        self.limit(self.food, 8_000_000)
+        self.add(500_000)
+        result = summary.period_summary(self.user, self.RANGE, TODAY)
+        self.assertFalse(result.is_month)
+        self.assertFalse(result.has_plan)
+        self.assertIsNone(result.projection)
+        self.assertIsNone(result.daily_budget)
+
+    def test_only_the_users_own_data_in_a_range(self):
+        other = make_user(email="other@example.com", name="Other")
+        wallet = Wallet.objects.create(user=other, name="Other BCA")
+        self.add(400_000, user=other, wallet=wallet)
+        result = summary.period_summary(self.user, self.RANGE, TODAY)
+        self.assertEqual((result.expense, result.categories), (0, []))
+        self.assertEqual(sum(amount for _, amount in result.daily), 0)
+
+    def test_fixed_query_counts(self):
+        self.add(10_000)
+        with self.assertNumQueries(5):
+            summary.period_summary(self.user, Period.for_month(2026, 11), TODAY)
+        with self.assertNumQueries(3):
+            summary.period_summary(self.user, self.RANGE, TODAY)

@@ -138,7 +138,7 @@ class TransactionsPageTests(ActivityTestCase):
         self.transfer(500_000)
         self.tx("October", 999, day=date(2026, 10, 31))
         response = self.client.get(self.url)
-        self.assertEqual(response.context["month_param"], "2026-11")
+        self.assertEqual(response.context["period"].month, (2026, 11))
         self.assertEqual(response.context["summary"], {"income": 12_500_000, "expense": 5_847_500, "net": 6_652_500})
         self.assertNotContains(response, "October")
         self.assertIsNone(response.context["next_url"])
@@ -150,7 +150,7 @@ class TransactionsPageTests(ActivityTestCase):
         self.assertIn("month=2026-11", response.context["next_url"])
         for bad in ["2026-13", "abc", "2027-01"]:
             with self.subTest(month=bad):
-                self.assertEqual(self.client.get(self.url, {"month": bad}).context["month_param"], "2026-11")
+                self.assertEqual(self.client.get(self.url, {"month": bad}).context["period"].month, (2026, 11))
 
     def test_table_rows_with_date_column_and_transfer_row(self):
         self.tx("GoFood", 67_500)
@@ -424,3 +424,66 @@ class ActivityPrivacyTests(ActivityTestCase):
                 self.assertEqual(self.client.post(url).status_code, 404)
         self.assertTrue(Transaction.objects.filter(pk=self.their_tx.pk).exists())
         self.assertTrue(Transfer.objects.filter(pk=self.their_transfer.pk).exists())
+
+
+class TransactionsRangeTests(ActivityTestCase):
+    """add-date-range: Transactions for a range of days (today is 16 Nov 2026)."""
+
+    RANGE = {"from": "2026-11-10", "to": "2026-11-16"}
+
+    def setUp(self):
+        super().setUp()
+        self.tx("Before", 11_000, day=date(2026, 11, 9))
+        self.tx("Start", 100_000, day=date(2026, 11, 10))
+        self.tx("Salary", 5_000_000, "Salary", self.bca, date(2026, 11, 12))
+        self.tx("End", 200_000, day=date(2026, 11, 16))
+
+    def test_a_range_of_days(self):
+        response = self.client.get(self.url, self.RANGE)
+        self.assertEqual([e.description for e, _ in response.context["entries"]], ["End", "Salary", "Start"])
+        self.assertContains(response, "10 Nov – 16 Nov 2026")
+        self.assertContains(response, "3 transactions in 10 Nov – 16 Nov 2026")
+
+    def test_range_summary(self):
+        summary = self.client.get(self.url, self.RANGE).context["summary"]
+        self.assertEqual((summary["income"], summary["expense"]), (5_000_000, 300_000))
+
+    def test_filters_keep_the_range(self):
+        response = self.client.get(self.url, {**self.RANGE, "wallet": self.gopay.pk})
+        content = response.content.decode()
+        self.assertIn('<input type="hidden" name="from" value="2026-11-10">', content)
+        self.assertIn('<input type="hidden" name="to" value="2026-11-16">', content)
+        self.assertTrue(response.context["clear_url"].endswith("?from=2026-11-10&to=2026-11-16"))
+        self.assertIn(f"wallet={self.gopay.pk}", response.context["export_url"])
+        self.assertIn("from=2026-11-10", response.context["export_url"])
+
+    def test_export_a_range(self):
+        response = self.client.get(reverse("finance:transactions_export"), self.RANGE)
+        self.assertIn('filename="walleto-transactions-2026-11-10_2026-11-16.csv"', response["Content-Disposition"])
+        body = response.content.decode("utf-8-sig")
+        self.assertIn("Start", body)
+        self.assertNotIn("Before", body)
+
+    def test_a_whole_month_keeps_its_file_name(self):
+        response = self.client.get(reverse("finance:transactions_export"), {"from": "2026-10-01", "to": "2026-10-31"})
+        self.assertIn('filename="walleto-transactions-2026-10.csv"', response["Content-Disposition"])
+
+    def test_arrows_and_picker(self):
+        response = self.client.get(self.url, self.RANGE)
+        self.assertIn("month=2026-10", response.context["prev_url"])
+        self.assertIsNone(response.context["next_url"])
+        self.assertContains(response, 'hx-target="#transactions-page"')
+        self.assertNotContains(response, "Last 7 days")
+        self.assertContains(response, 'name="from" x-ref="from" value="2026-11-10" max="2026-11-16"')
+        # The picker's form keeps the filters too.
+        self.assertContains(self.client.get(self.url, {**self.RANGE, "q": "kopi"}), '<input type="hidden" name="q" value="kopi">', count=1)
+
+    def test_another_users_entries_stay_out(self):
+        other = make_user(email="other@example.com", name="Other")
+        wallet = Wallet.objects.create(user=other, name="Other BCA")
+        Transaction.objects.create(user=other, wallet=wallet, category=cat("Food & drinks"), amount=777_000, date=date(2026, 11, 12), description="Not mine")
+        response = self.client.get(self.url, self.RANGE)
+        self.assertNotContains(response, "Not mine")
+        self.assertEqual(response.context["summary"]["expense"], 300_000)
+        export = self.client.get(reverse("finance:transactions_export"), self.RANGE).content.decode("utf-8-sig")
+        self.assertNotIn("Not mine", export)

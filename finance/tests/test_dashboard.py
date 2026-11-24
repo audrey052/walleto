@@ -98,7 +98,7 @@ class DashboardPageTests(SummaryFixtures, TestCase):
 
     def test_future_month(self, _now):
         response = self.get(month="2026-12")
-        self.assertEqual((response.context["s"].year, response.context["s"].month), (2026, 11))
+        self.assertEqual(response.context["s"].period.month, (2026, 11))
         self.assertContains(response, "November 2026")
         self.assertNotContains(response, 'aria-label="Next month"')
 
@@ -169,3 +169,109 @@ class AxisLabelTests(SimpleTestCase):
         from finance.views_dashboard import axis_labels
         texts = [label["text"] for label in axis_labels(self.bars(30, 24))]
         self.assertEqual([t for t in texts if t], ["01", "05", "10", "15", "20", "24", "30"])
+
+
+class DashboardRangeTests(SummaryFixtures, TestCase):
+    """add-date-range: Home for a range of days (today is 15 Nov 2026)."""
+
+    url = reverse("core:dashboard")
+    RANGE = {"from": "2026-11-09", "to": "2026-11-15"}
+
+    def setUp(self):
+        super().setUp()
+        patcher = mock.patch("django.utils.timezone.now", return_value=NOW)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.client.force_login(self.user)
+        self.limit(self.food, 9_000_000)
+
+    def get(self, **params):
+        return self.client.get(self.url, params)
+
+    def test_a_range_of_days(self):
+        self.add(600_000, day=date(2026, 11, 10))
+        self.add(400_000, cat=self.transport, day=date(2026, 11, 12))
+        self.add(999_000, day=date(2026, 11, 8))  # the day before the range
+        response = self.get(**self.RANGE)
+        self.assertEqual(response.context["s"].expense, 1_000_000)
+        self.assertContains(response, "9 Nov – 15 Nov 2026")
+        self.assertContains(response, 'class="day-bar ', count=7)
+        self.assertNotContains(response, "data-daily-budget")
+
+    def test_a_range_is_not_a_month(self):
+        response = self.get(**self.RANGE)
+        self.assertContains(response, "The monthly plan shows when a whole month is selected.")
+        self.assertContains(response, f'href="{self.url}?month=2026-11"')
+        self.assertContains(response, "Show November 2026")
+        self.assertNotContains(response, "Remaining this month")
+        self.assertNotContains(response, "data-projection")
+
+    def test_change_against_the_previous_days(self):
+        self.add(1_100_000, day=date(2026, 11, 10))
+        self.add(1_000_000, day=date(2026, 11, 5))  # inside 2-8 Nov
+        content = self.get(**self.RANGE).content.decode()
+        self.assertIn("10.0%", content)
+        self.assertEqual(content.count("vs. previous 7 days"), 2)
+
+    def test_share_in_a_range(self):
+        self.add(600_000, day=date(2026, 11, 10))
+        self.add(400_000, cat=self.transport, day=date(2026, 11, 12))
+        content = self.get(**self.RANGE).content.decode().replace("\r", "")
+        self.assertIn("Share of spending in this period", content)
+        self.assertIn(">\n                      60%", content)
+        self.assertIn(">\n                      40%", content)
+        self.assertNotIn("No limit", content)
+        self.assertIn(f'?from=2026-11-09&amp;to=2026-11-15&amp;category={self.transport.pk}', content)
+
+    def test_same_numbers_for_a_range(self):
+        self.add(600_000, day=date(2026, 11, 10))
+        self.add(250_000, cat=self.salary, day=date(2026, 11, 11))
+        home = self.get(**self.RANGE).context["s"]
+        page = self.client.get(reverse("finance:transactions"), self.RANGE).context["summary"]
+        self.assertEqual((home.income, home.expense), (page["income"], page["expense"]))
+
+    def test_picker(self):
+        response = self.get(**self.RANGE)
+        self.assertContains(response, 'hx-target="#dashboard"')
+        self.assertNotContains(response, "Last 7 days")
+        self.assertContains(response, 'name="from" x-ref="from" value="2026-11-09" max="2026-11-15"')
+        self.assertContains(response, f'href="{self.url}?month=2026-10"')  # previous month
+        self.assertNotContains(response, 'aria-label="Next month"')
+
+    def test_another_users_spending_in_a_range(self):
+        other = make_user(email="other@example.com", name="Other")
+        wallet = Wallet.objects.create(user=other, name="Other BCA")
+        self.add(400_000, user=other, wallet=wallet, day=date(2026, 11, 10), text="Not mine")
+        response = self.get(**self.RANGE)
+        self.assertEqual(response.context["s"].expense, 0)
+        self.assertEqual(response.context["s"].categories, [])
+        self.assertNotContains(response, "Rp400.000")
+
+
+class RangeAxisLabelTests(SimpleTestCase):
+    def bars(self, start, days, today):
+        from datetime import timedelta
+
+        from finance.summary import DayBar
+        result = []
+        for n in range(days):
+            day = start + timedelta(days=n)
+            result.append(DayBar(day, 0, 0, day == today, day > today))
+        return result
+
+    def texts(self, bars):
+        from finance.views_dashboard import axis_labels
+        return [label["text"] for label in axis_labels(bars) if label["text"]]
+
+    def test_a_week(self):
+        self.assertEqual(self.texts(self.bars(date(2026, 11, 9), 7, date(2026, 11, 15))), ["09", "15"])  # 10 sits next to 9
+
+    def test_across_two_months(self):
+        texts = self.texts(self.bars(date(2026, 10, 26), 30, date(2026, 11, 24)))
+        self.assertEqual(texts[0], "26 Oct")
+        self.assertIn("1 Nov", texts)
+        self.assertEqual(texts[-1], "24")
+
+    def test_long_range_marks_months(self):
+        texts = self.texts(self.bars(date(2026, 9, 1), 85, date(2026, 11, 24)))
+        self.assertEqual(texts, ["1 Sep", "1 Oct", "1 Nov", "24"])

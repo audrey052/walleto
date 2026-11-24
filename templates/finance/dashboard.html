@@ -12,24 +12,12 @@
         <h1>Home</h1>
         <p class="mt-1.5 text-body text-secondary">{{ active_section.subtitle }}</p>
       </div>
-      <div class="flex h-9 w-fit items-center rounded-control border border-border bg-surface">
-        <a href="{{ prev_url }}" class="mx-0.5 grid size-7 place-items-center rounded-chip text-secondary hover:bg-forest-tint hover:text-forest" aria-label="Previous month"
-           hx-get="{{ prev_url }}" hx-target="#dashboard" hx-select="#dashboard" hx-swap="outerHTML" hx-push-url="true">{% icon "chevron-left" size=16 %}</a>
-        <span class="flex min-w-[150px] items-center justify-center gap-2 text-control font-medium">
-          <span class="text-muted">{% icon "calendar" size=15 %}</span>{{ month_start|date:"F Y" }}
-        </span>
-        {% if next_url %}
-          <a href="{{ next_url }}" class="mx-0.5 grid size-7 place-items-center rounded-chip text-secondary hover:bg-forest-tint hover:text-forest" aria-label="Next month"
-             hx-get="{{ next_url }}" hx-target="#dashboard" hx-select="#dashboard" hx-swap="outerHTML" hx-push-url="true">{% icon "chevron-right" size=16 %}</a>
-        {% else %}
-          <span class="mx-0.5 grid size-7 place-items-center text-secondary opacity-30" aria-hidden="true">{% icon "chevron-right" size=16 %}</span>
-        {% endif %}
-      </div>
+      {% include "components/period_picker.html" %}
     </div>
 
     {# Balance overview: Remaining, then income and expenses (Figma .balance-overview) #}
     <section class="mb-6 grid overflow-hidden rounded-panel border border-border bg-surface lg:grid-cols-[1.55fr_1fr_1fr]">
-      <div class="bg-forest-tint px-6 py-6 md:px-7{% if not s.has_plan %} flex flex-col items-center justify-center text-center{% endif %}">
+      <div class="bg-forest-tint px-6 py-6 md:px-7{% if not s.has_plan %} flex flex-col items-center justify-center text-center{% endif %}" data-plan-block="{% if s.is_month %}month{% else %}range{% endif %}">
         {% if s.has_plan %}
           <p class="text-caption font-medium text-secondary">Remaining this month</p>
           <p class="mt-2">
@@ -49,6 +37,11 @@
             {% include "components/progress.html" with percent=s.plan_percent label="Monthly plan spent" %}
             <p class="mt-2.5 text-caption text-muted"><strong class="font-medium text-secondary">{{ s.plan_spent|rupiah }}</strong> of {{ s.plan|rupiah }} planned</p>
           </div>
+        {% elif not s.is_month %}
+          {# A range: the monthly plan is never prorated (add-date-range design decision 4). #}
+          <p class="max-w-sm text-body text-secondary">The monthly plan shows when a whole month is selected.</p>
+          <a href="{{ plan_month_url }}" class="btn mt-5"
+             hx-get="{{ plan_month_url }}" hx-target="#dashboard" hx-select="#dashboard" hx-swap="outerHTML" hx-push-url="true">Show {{ plan_month.label }}</a>
         {% else %}
           <p class="text-section font-semibold">{{ month_start|date:"F" }} has no monthly plan</p>
           <p class="mt-1 max-w-sm text-caption text-secondary">Set one on Budget to see what is left and how long it lasts.</p>
@@ -65,7 +58,7 @@
           <p class="mt-1 text-[26px] font-semibold leading-snug">{% amount metric.value %}</p>
           <p class="mt-2 flex items-center gap-1 text-caption whitespace-nowrap {% if metric.change is None %}text-muted{% elif metric.good %}text-forest{% else %}text-clay{% endif %}" data-change>
             {% if metric.change is None %}—{% else %}{% if metric.change.up %}{% icon "arrow-up" size=13 %}{% else %}{% icon "arrow-down" size=13 %}{% endif %} {{ metric.change.text }}{% endif %}
-            <span class="ml-0.5 text-muted">vs. last month</span>
+            <span class="ml-0.5 text-muted">{{ s.compare_label }}</span>
           </p>
         </div>
       {% endfor %}
@@ -96,7 +89,7 @@
                 <span>{{ s.daily_budget|rupiah }}</span>
               </div>
             {% endif %}
-            <ol class="relative flex h-full items-end justify-between gap-[2px] md:gap-1" aria-label="Expenses per day in {{ month_start|date:'F Y' }}">
+            <ol class="relative flex h-full items-end justify-between gap-[2px] md:gap-1" aria-label="Expenses per day in {{ period.label }}">
               {% for bar in s.chart.bars %}
                 <li class="relative flex h-full min-w-0 flex-1 items-end justify-center">
                   {% if bar.is_future %}
@@ -119,7 +112,7 @@
         </div>
         <div class="mx-5 mt-10 flex items-center justify-between border-t border-[#f0f0e9] pt-3.5 pb-4 text-caption text-muted md:mx-6">
           <span class="flex items-center gap-1.5"><i class="size-1.5 rounded-[1px] bg-[#97af98]"></i>Daily expenses</span>
-          <span>01–{{ chart_last_day|stringformat:"02d" }} {{ month_start|date:"M Y" }}</span>
+          <span>{{ chart_footer }}</span>
         </div>
       </section>
 
@@ -144,25 +137,27 @@
                   </span>
                   <span class="mt-2 flex items-center gap-3">
                     <span class="flex-1">
-                      {% if line.percent is not None %}
+                      {% if line.share is not None %}
+                        <span class="progress block"><span style="width: {{ line.bar }}%; background: {{ line.category.color }};"></span></span>
+                      {% elif line.percent is not None %}
                         {% include "components/progress.html" with percent=line.percent color=line.category.color label=line.category.name %}
                       {% else %}
                         <span class="progress block"><span style="width: {{ line.bar }}%; background: {{ line.category.color }};"></span></span>
                       {% endif %}
                     </span>
-                    <span class="w-14 text-right text-caption whitespace-nowrap {% if line.percent is None %}text-muted{% elif line.percent > 100 %}text-clay{% elif line.percent >= 85 %}text-amber{% else %}text-secondary{% endif %}">
-                      {% if line.percent is None %}No limit{% else %}{{ line.percent }}%{% endif %}
+                    <span class="w-14 text-right text-caption whitespace-nowrap {% if line.share is not None %}text-secondary{% elif line.percent is None %}text-muted{% elif line.percent > 100 %}text-clay{% elif line.percent >= 85 %}text-amber{% else %}text-secondary{% endif %}">
+                      {% if line.share is not None %}{{ line.share }}%{% elif line.percent is None %}No limit{% else %}{{ line.percent }}%{% endif %}
                     </span>
                   </span>
                 </a>
               </li>
             {% endfor %}
           </ul>
-          <p class="mx-5 mt-3 border-t border-[#f0f0e9] pt-3.5 pb-4 text-caption text-muted md:mx-6">Percentage of each category's budget</p>
+          <p class="mx-5 mt-3 border-t border-[#f0f0e9] pt-3.5 pb-4 text-caption text-muted md:mx-6">{% if s.is_month %}Percentage of each category's budget{% else %}Share of spending in this period{% endif %}</p>
         {% else %}
           <div class="empty-state flex-1 justify-center py-10">
             <span class="empty-state-icon">{% icon "budget" size=22 %}</span>
-            <p class="text-body text-secondary">No expenses in {{ month_start|date:"F" }} yet.</p>
+            <p class="text-body text-secondary">{% if s.is_month %}No expenses in {{ month_start|date:"F" }} yet.{% else %}No expenses in {{ period.label }}.{% endif %}</p>
           </div>
         {% endif %}
       </section>
