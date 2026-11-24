@@ -11,14 +11,10 @@
   <form method="post" action="{{ action }}" hx-post="{{ action }}" hx-target="closest dialog" hx-swap="outerHTML" novalidate {% if form_x_data %}x-data="{{ form_x_data }}" @input="sync()" @change="sync()"{% endif %}>
     {% csrf_token %}
     {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
-    <div class="mb-6 flex items-start justify-between gap-4">
-      <div>
-        <h2 id="modal-title" class="text-modal">{{ title }}</h2>
-        {% if description %}<p class="mt-1.5 text-control text-secondary">{{ description }}</p>{% endif %}
-      </div>
-      <button type="button" class="btn-icon -mt-1.5 -mr-2" aria-label="Close dialog" @click="$el.closest('dialog').close()">
-        {% icon "close" %}
-      </button>
+    {# No close icon: Cancel (or Close), Escape and a click outside already close it. #}
+    <div class="mb-6">
+      <h2 id="modal-title" class="text-modal">{{ title }}</h2>
+      {% if description %}<p class="mt-1.5 text-control text-secondary">{{ description }}</p>{% endif %}
     </div>
     <div class="flex flex-col gap-4">
       {% include body %}

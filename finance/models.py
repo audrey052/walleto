@@ -399,7 +399,8 @@ class SavingsGoal(models.Model):
     target = models.BigIntegerField()
     deadline = models.DateField(null=True, blank=True)
     start_date = models.DateField()
-    is_main = models.BooleanField(default=False)
+    # The user's order, set by drag and drop; the first active goal is the main goal.
+    position = models.PositiveIntegerField(default=0)
     completed_at = models.DateTimeField(null=True, blank=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -408,7 +409,7 @@ class SavingsGoal(models.Model):
     objects = GoalQuerySet.as_manager()
 
     class Meta:
-        ordering = ["created_at", "id"]
+        ordering = ["position", "created_at", "id"]
         constraints = [
             models.CheckConstraint(condition=Q(target__gte=MIN_GOAL_TARGET), name="goal_target_minimum"),
         ]

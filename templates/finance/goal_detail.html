@@ -29,12 +29,6 @@
           <button type="submit" class="btn">Reopen goal</button>
         </form>
       {% else %}
-        {% if not goal.is_main %}
-          <form method="post" action="{% url 'finance:goal_make_main' goal.pk %}">
-            {% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
-            <button type="submit" class="btn-text text-secondary">Make main goal</button>
-          </form>
-        {% endif %}
         <a href="{% url 'finance:goal_edit' goal.pk %}?next={{ here }}" class="btn"
            hx-get="{% url 'finance:goal_edit' goal.pk %}?next={{ here }}" hx-target="#modal-root">{% icon "edit" size=15 %} Edit</a>
         {% if summary.saved > 0 %}

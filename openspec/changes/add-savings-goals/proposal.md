@@ -15,13 +15,13 @@ Walleto shows what was spent and what is left for the month, but not what the us
   - with a deadline, months left, the amount needed per month, and a status: **on track** or **behind** against a straight-line plan from the goal's start date to its deadline. A goal whose deadline has passed is **past deadline**.
 - **Savings goals page,** replacing the placeholder:
   - The main goal uses the Figma card: name, saved "of" target, progress bar, "X% of the way there" or "Your goal, reached.", "Rp… to go", "Add to this goal", "Edit goal", and the ledger-lines illustration.
-  - The main goal is the one the user picked, otherwise the one with the nearest deadline.
+  - The user orders their goals by drag and drop; the first goal is the main goal.
   - Below the card, a row "Put aside Rp… a month to reach your target by <month>" when the goal has a deadline.
   - A compact list of the other active goals, and a "Completed" section.
 - **Goal detail page** with:
   - a line chart of the saved amount over time against the plan line;
   - the deposit and withdrawal history.
-- **Goal actions:** create, edit, make main goal, mark complete (once reached) and reopen, delete (only when nothing is saved). Deposits and withdrawals can be deleted.
+- **Goal actions:** create, edit, reorder by drag and drop, mark complete (once reached) and reopen, delete (only when nothing is saved). Deposits and withdrawals can be deleted.
 - **Wallets page:** the balance panel shows the amount set aside in goals. A wallet's balance now subtracts its deposits and adds its withdrawals, so the total balance stays spendable money.
 - **Transactions page:** deposits and withdrawals appear as neutral rows, like transfers. They are excluded from income and expenses, and the CSV export includes them.
 - The demo account gets goals with deposits.

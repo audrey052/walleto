@@ -3,7 +3,7 @@
 **Created:** 2026-11-24
 **Last edited:** 2026-11-24
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `7b04a3a` fix: simplify wallets and transactions
 **Branch:** `main`, parent `89bd29e`
 **OpenSpec change:** none for the main wallets spec (edited directly); the active `add-savings-goals` delta was updated so archiving it doesn't bring removed parts back
 **Trigger:** A series of developer requests to remove duplicated or unneeded parts of the Wallets and Transactions pages.

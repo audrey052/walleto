@@ -2,6 +2,7 @@
 {% load icons money %}
 
 {% block title %}Savings goals{% endblock %}
+{% block head %}{% load static %}<script src="{% static 'vendor/sortable.min.js' %}" defer></script>{% endblock %}
 
 {% block content %}
   {% url 'finance:goals' as goals_url %}
@@ -18,12 +19,20 @@
   </div>
 
   {% if main %}
+    {# One sortable list (static/js/app.js `goalOrder`): the first goal is the main goal and gets the big card. #}
+    <div id="goal-order" x-data="goalOrder" data-order-url="{% url 'finance:goal_reorder' %}" class="flex flex-col gap-3">
     {% with goal=main.goal %}
       {% url 'finance:goal_detail' goal.pk as detail_url %}
+      <div data-goal-id="{{ goal.pk }}">
       {# Main goal card, after the Figma `.savings-feature` (grid 1.8fr / 1fr, 40px padding). #}
-      <section class="panel grid gap-8 p-6 md:grid-cols-[1.8fr_1fr] md:gap-[50px] md:p-10" aria-labelledby="main-goal-name">
+      <section class="panel relative grid gap-8 p-6 md:grid-cols-[1.8fr_1fr] md:gap-[50px] md:p-10" aria-labelledby="main-goal-name">
         <div class="min-w-0">
-          <p class="eyebrow">Main goal</p>
+          <div class="flex items-center justify-between gap-3">
+            <p class="eyebrow">Main goal</p>
+            {% if others %}<button type="button" class="drag-handle btn-icon size-8 shrink-0 cursor-grab touch-none -my-2 -mr-2 text-muted active:cursor-grabbing"
+                        aria-label="Move {{ goal.name }}. Drag, or use the up and down arrow keys." title="Drag to reorder"
+                        @keydown.up.prevent="move($el, -1)" @keydown.down.prevent="move($el, 1)">{% icon "grip" size=16 %}</button>{% endif %}
+          </div>
           <h2 id="main-goal-name" class="mt-3.5 text-[25px] font-semibold tracking-[-0.9px] [overflow-wrap:anywhere]">
             <a href="{{ detail_url }}" class="hover:text-forest">{{ goal.name }}</a>
           </h2>
@@ -70,7 +79,7 @@
 
       {# Figma `.insight-row` #}
       {% if main.per_month or main.reached %}
-        <div class="my-5 flex items-center gap-3 rounded-control border border-[#e6e8db] bg-[#f2f3eb] px-[18px] py-[15px]">
+        <div class="mt-3 flex items-center gap-3 rounded-control border border-[#e6e8db] bg-[#f2f3eb] px-[18px] py-[15px]">
           <span class="text-[#738069]">{% icon "info" size=18 %}</span>
           <p class="flex-1 text-caption leading-[1.8] text-[#777c6b]">
             {% if main.reached %}
@@ -81,46 +90,37 @@
           </p>
         </div>
       {% endif %}
+      </div>
     {% endwith %}
 
-    {% if others %}
-      <section class="panel mt-6" aria-labelledby="other-goals">
-        <div class="flex items-center gap-2 px-5 pt-[22px] pb-4 md:px-[23px]">
-          <h2 id="other-goals" class="text-section font-semibold">Other goals</h2>
-          <span class="rounded-[3px] bg-[#f1f2eb] px-1.5 py-0.5 text-caption text-[#8c9180]">{{ others|length }}</span>
+    {% for summary in others %}
+      {% with goal=summary.goal %}
+        <div data-goal-id="{{ goal.pk }}" class="panel group relative transition-colors hover:bg-[#fdfdfa]">
+          <a href="{% url 'finance:goal_detail' goal.pk %}" class="absolute inset-0" aria-label="Open {{ goal.name }}"></a>
+          <div class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2.5 py-4 pr-5 pl-2.5 md:grid-cols-[auto_minmax(0,1.4fr)_minmax(0,2fr)_150px] md:gap-x-4 md:py-5 md:pr-[25px] md:pl-3">
+            <span class="relative z-10 row-span-2 md:row-span-1">{% if others %}<button type="button" class="drag-handle btn-icon size-8 shrink-0 cursor-grab touch-none text-muted active:cursor-grabbing"
+                        aria-label="Move {{ goal.name }}. Drag, or use the up and down arrow keys." title="Drag to reorder"
+                        @keydown.up.prevent="move($el, -1)" @keydown.down.prevent="move($el, 1)">{% icon "grip" size=16 %}</button>{% endif %}</span>
+            <div class="min-w-0">
+              <strong class="block truncate text-control font-semibold">{{ goal.name }}</strong>
+              <span class="mt-1.5 flex flex-wrap items-center gap-2 text-caption text-muted">
+                {% if goal.deadline %}By {{ goal.deadline|date:"j M Y" }}{% else %}No deadline{% endif %}
+                {% include "finance/_goal_status.html" with summary=summary %}
+              </span>
+            </div>
+            <div class="col-span-2 col-start-2 row-start-2 flex items-center gap-3 md:col-span-1 md:col-start-auto md:row-start-auto">
+              <span class="flex-1">{% include "finance/_goal_progress.html" with summary=summary %}</span>
+              <span class="w-9 text-right text-caption text-secondary">{{ summary.percent }}%</span>
+            </div>
+            <div class="text-right">
+              <strong class="block text-control font-semibold whitespace-nowrap">{{ summary.saved|rupiah }}</strong>
+              <span class="mt-1 block text-caption whitespace-nowrap text-muted">of {{ goal.target|rupiah }}</span>
+            </div>
+          </div>
         </div>
-        <ul>
-          {% for summary in others %}
-            {% with goal=summary.goal %}
-              <li class="group relative border-t border-[#f0efe9] transition-colors hover:bg-[#fdfdfa]">
-                <a href="{% url 'finance:goal_detail' goal.pk %}" class="absolute inset-0" aria-label="Open {{ goal.name }}"></a>
-                <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2.5 px-5 py-5 md:grid-cols-[minmax(0,1.4fr)_minmax(0,2fr)_150px_auto] md:px-[25px]">
-                  <div class="min-w-0">
-                    <strong class="block truncate text-control font-semibold">{{ goal.name }}</strong>
-                    <span class="mt-1.5 flex flex-wrap items-center gap-2 text-caption text-muted">
-                      {% if goal.deadline %}By {{ goal.deadline|date:"j M Y" }}{% else %}No deadline{% endif %}
-                      {% include "finance/_goal_status.html" with summary=summary %}
-                    </span>
-                  </div>
-                  <div class="col-span-2 row-start-2 flex items-center gap-3 md:col-span-1 md:row-start-auto">
-                    <span class="flex-1">{% include "finance/_goal_progress.html" with summary=summary %}</span>
-                    <span class="w-9 text-right text-caption text-secondary">{{ summary.percent }}%</span>
-                  </div>
-                  <div class="text-right">
-                    <strong class="block text-control font-semibold whitespace-nowrap">{{ summary.saved|rupiah }}</strong>
-                    <span class="mt-1 block text-caption whitespace-nowrap text-muted">of {{ goal.target|rupiah }}</span>
-                  </div>
-                  <form method="post" action="{% url 'finance:goal_make_main' goal.pk %}" class="relative z-10 col-span-2 row-start-3 md:col-span-1 md:row-start-auto">
-                    {% csrf_token %}
-                    <button type="submit" class="btn-text text-secondary md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">Make main goal</button>
-                  </form>
-                </div>
-              </li>
-            {% endwith %}
-          {% endfor %}
-        </ul>
-      </section>
-    {% endif %}
+      {% endwith %}
+    {% endfor %}
+    </div>
   {% else %}
     <section class="panel">
       <div class="empty-state">

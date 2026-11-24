@@ -1,5 +1,5 @@
 from django import forms
-from django.db.models import Q
+from django.db.models import Max, Q
 from django.utils import dateformat, timezone
 
 from core.forms import AmountField
@@ -308,6 +308,9 @@ class GoalForm(forms.ModelForm):
     def save(self, commit=True):
         if not self.instance.pk:
             self.instance.start_date = timezone.localdate()
+            # A new goal goes to the end of the user's order.
+            last = SavingsGoal.objects.for_user(self.user).aggregate(last=Max("position"))["last"]
+            self.instance.position = 0 if last is None else last + 1
         return super().save(commit)
 
 

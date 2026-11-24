@@ -84,7 +84,7 @@ For a goal with a deadline that is not reached and not past its deadline, the ap
 - **THEN** it shows Rp750.000 a month
 
 ### Requirement: Savings goals page
-The Savings goals page SHALL feature the main goal in a large card with its name, saved of target, progress bar, progress line, amount to go, deadline and status, and the actions "Add to this goal" and "Edit goal". When the main goal has a monthly amount, a line below the card SHALL say "Put aside <amount> a month to reach your target by <Month YYYY>." The other active goals SHALL be listed below with their progress, saved of target, deadline and status.
+The Savings goals page SHALL feature the main goal in a large card with its name, saved of target, progress bar, progress line, amount to go, deadline and status, and the actions "Add to this goal" and "Edit goal". When the main goal has a monthly amount, a line below the card SHALL say "Put aside <amount> a month to reach your target by <Month YYYY>." The other active goals SHALL be listed below, without a heading, with their progress, saved of target, deadline and status.
 
 #### Scenario: Several goals
 - **WHEN** a user has active goals "Bali trip", "Emergency fund" and "Laptop"
@@ -95,15 +95,19 @@ The Savings goals page SHALL feature the main goal in a large card with its name
 - **THEN** the Laptop goal detail page opens
 
 ### Requirement: Main goal
-The main goal SHALL be the goal the user made main. If none was chosen, it SHALL be the active goal with the nearest deadline, then the oldest active goal without a deadline. Making a goal main SHALL unset it on the user's other goals.
+The user's active goals SHALL keep an order that the user sets by dragging a goal's handle, or by focusing the handle and pressing the up or down arrow key. The first goal in the order SHALL be the main goal, shown in the large card; the others follow in order. The order SHALL be saved right away. A new or reopened goal SHALL go to the end of the order.
 
-#### Scenario: Nearest deadline
-- **WHEN** no goal was made main, "Bali trip" is due June 2027 and "Laptop" is due March 2027
-- **THEN** Laptop is shown in the large card
+#### Scenario: Drag a goal to the top
+- **WHEN** the order is Laptop, Emergency fund, Bali trip and the user drags Emergency fund above Laptop
+- **THEN** Emergency fund is shown in the large card, followed by Laptop and Bali trip, also after a reload
 
-#### Scenario: Chosen main goal
-- **WHEN** the user makes "Emergency fund" the main goal
-- **THEN** Emergency fund is shown in the large card and Laptop moves to the list
+#### Scenario: Keyboard
+- **WHEN** the user focuses Emergency fund's handle and presses the up arrow key
+- **THEN** Emergency fund moves one place up and the new order is saved
+
+#### Scenario: New goal
+- **WHEN** a user with goals Laptop and Bali trip creates "Emergency fund"
+- **THEN** Emergency fund is listed after Bali trip
 
 ### Requirement: No goals yet
 When the user has no active goals, the page SHALL show an empty state inviting them to create their first goal, plus the Completed section if any goal was completed.

@@ -127,9 +127,10 @@ def build_demo(today):
     transactions, transfers, deposits = [], [], []
     first = _first_of_month(today, 2)
     goals = {}
-    for name, target, months, *_ in GOALS:
+    for position, (name, target, months, *_) in enumerate(GOALS):
         goals[name] = SavingsGoal.objects.create(
             user=user, name=name, target=target, start_date=first, deadline=_last_day(first, months),
+            position=position,
         )
 
     def save_up(day, goal, wallet, amount, note):

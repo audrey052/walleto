@@ -126,6 +126,45 @@ document.addEventListener("alpine:init", () => {
     },
   }));
 
+  // Savings goals order (savings-goals spec, "Main goal"): drag the grip handle, or
+  // focus it and press the up/down arrow keys. The order is saved right away; when
+  // a different goal ends up first, the page reloads so it gets the big card.
+  Alpine.data("goalOrder", () => ({
+    first: null,
+    init() {
+      this.first = this.ids()[0];
+      const start = () =>
+        window.Sortable.create(this.$el, {
+          handle: ".drag-handle",
+          draggable: "[data-goal-id]",
+          animation: 150,
+          ghostClass: "opacity-40",
+          onEnd: () => this.save(),
+        });
+      if (window.Sortable) start();
+      else window.addEventListener("load", start, { once: true });
+    },
+    ids() {
+      return [...this.$el.querySelectorAll(":scope > [data-goal-id]")].map((el) => el.dataset.goalId);
+    },
+    move(handle, step) {
+      const item = handle.closest("[data-goal-id]");
+      const sibling = step < 0 ? item.previousElementSibling : item.nextElementSibling;
+      if (!sibling || !sibling.matches("[data-goal-id]")) return;
+      if (step < 0) sibling.before(item);
+      else sibling.after(item);
+      handle.focus();
+      this.save();
+    },
+    async save() {
+      const body = new FormData();
+      this.ids().forEach((id) => body.append("order", id));
+      const headers = JSON.parse(document.body.getAttribute("hx-headers") || "{}");
+      const response = await fetch(this.$el.dataset.orderUrl, { method: "POST", body, headers });
+      if (response.ok && this.ids()[0] !== this.first) window.location.reload();
+    },
+  }));
+
   // Toast that closes itself after about four seconds.
   Alpine.data("toast", () => ({
     visible: true,

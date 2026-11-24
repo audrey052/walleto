@@ -37,7 +37,8 @@ One Markdown record per commit, describing what the commit built, why, which fil
 | 29 | `5cec7fa` | [money-input-separators.md](money-input-separators.md) | all (input) |
 | 30 | `2b48268` | [styleguide-money-inputs.md](styleguide-money-inputs.md) | 0 (style guide) |
 | 31 | `89bd29e` | [versioned-static-assets.md](versioned-static-assets.md) | 0 (assets) |
-| 32 | this commit | [simplify-wallets-and-transactions.md](simplify-wallets-and-transactions.md) | 1, 2 (UI) |
+| 32 | `7b04a3a` | [simplify-wallets-and-transactions.md](simplify-wallets-and-transactions.md) | 1, 2 (UI) |
+| 33 | this commit | [goal-drag-and-drop.md](goal-drag-and-drop.md) | 4 |
 
 Commits made before MVP 0's code (`git init`, `.gitignore`, OpenSpec init) have no record.
 

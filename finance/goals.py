@@ -46,17 +46,11 @@ def per_month(to_go, months):
 
 
 def main_goal(goals):
-    """The goal made main, else the nearest deadline, else the oldest goal without one."""
+    """The first goal in the user's order (drag and drop sets `position`)."""
     goals = list(goals)
     if not goals:
         return None
-    chosen = [g for g in goals if g.is_main]
-    if chosen:
-        return chosen[0]
-    dated = [g for g in goals if g.deadline]
-    if dated:
-        return min(dated, key=lambda g: (g.deadline, g.created_at, g.pk))
-    return min(goals, key=lambda g: (g.created_at, g.pk))
+    return min(goals, key=lambda g: (g.position, g.created_at, g.pk))
 
 
 def saved_series(start, today, movements):

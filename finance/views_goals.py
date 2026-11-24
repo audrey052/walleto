@@ -2,7 +2,8 @@
 
 from django.contrib import messages
 from django.db import transaction as db_transaction
-from django.http import Http404
+from django.db.models import Max
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -28,20 +29,14 @@ def _detail_url(goal):
     return reverse("finance:goal_detail", args=[goal.pk])
 
 
-def _other_goals_order(summary):
-    goal = summary.goal
-    return (goal.deadline is None, goal.deadline or goal.start_date, goal.created_at, goal.pk)
-
-
 # ---------- pages ----------
 
 def goal_list(request):
     today = timezone.localdate()
     own = SavingsGoal.objects.for_user(request.user).with_saved()
-    active = [goals.summarize(g, g.saved, today) for g in own.active()]
-    main_goal = goals.main_goal([s.goal for s in active])
-    main = next((s for s in active if s.goal is main_goal), None)
-    others = sorted((s for s in active if s is not main), key=_other_goals_order)
+    # Active goals in the user's order: the first is the main goal, the rest follow (drag and drop).
+    active = [goals.summarize(g, g.saved, today) for g in own.active().order_by("position", "created_at", "id")]
+    main, others = (active[0], active[1:]) if active else (None, [])
     completed = [goals.summarize(g, g.saved, today) for g in own.completed().order_by("-completed_at")]
     return render(
         request,
@@ -160,16 +155,27 @@ def goal_withdraw(request, pk):
     )
 
 
-# ---------- main, complete, reopen ----------
+# ---------- order, complete, reopen ----------
 
 @require_POST
-def goal_make_main(request, pk):
-    goal = _own_goal(request, pk, active=True)
+def goal_reorder(request):
+    """Save the drag-and-drop order: `order` lists the user's active goal ids, first = main goal.
+
+    Ids that aren't the user's active goals are ignored; active goals missing from
+    the list keep their place after the listed ones.
+    """
+    own = list(SavingsGoal.objects.for_user(request.user).active().order_by("position", "created_at", "id"))
+    by_id = {g.pk: g for g in own}
+    wanted = []
+    for raw in request.POST.getlist("order"):
+        if raw.isdigit() and int(raw) in by_id and by_id[int(raw)] not in wanted:
+            wanted.append(by_id[int(raw)])
+    ordered = wanted + [g for g in own if g not in wanted]
     with db_transaction.atomic():
-        SavingsGoal.objects.filter(user=request.user, is_main=True).update(is_main=False)
-        SavingsGoal.objects.filter(pk=goal.pk).update(is_main=True)
-    messages.success(request, f"{goal.name} is now your main goal.")
-    return redirect(safe_next(request, reverse("finance:goals")))
+        for index, goal in enumerate(ordered):
+            if goal.position != index:
+                SavingsGoal.objects.filter(pk=goal.pk).update(position=index)
+    return HttpResponse(status=204)
 
 
 @require_POST
@@ -178,7 +184,7 @@ def goal_complete(request, pk):
     if goal.saved < goal.target:
         messages.error(request, f"{goal.name} hasn't reached its target yet.")
     else:
-        SavingsGoal.objects.filter(pk=goal.pk).update(completed_at=timezone.now(), is_main=False)
+        SavingsGoal.objects.filter(pk=goal.pk).update(completed_at=timezone.now())
         messages.success(request, f"{goal.name} completed.")
     return redirect(safe_next(request, reverse("finance:goals")))
 
@@ -188,7 +194,9 @@ def goal_reopen(request, pk):
     goal = _own_goal(request, pk)
     if goal.completed_at is None:
         raise Http404
-    SavingsGoal.objects.filter(pk=goal.pk).update(completed_at=None)
+    # Back at the end of the order, so it doesn't jump in front of the main goal.
+    last = SavingsGoal.objects.for_user(request.user).active().aggregate(last=Max("position"))["last"]
+    SavingsGoal.objects.filter(pk=goal.pk).update(completed_at=None, position=0 if last is None else last + 1)
     messages.success(request, f"{goal.name} is active again.")
     return redirect(safe_next(request, reverse("finance:goals")))
 
@@ -203,7 +211,7 @@ def goal_delete(request, pk):
         if holds_money:
             messages.error(request, f"Move the {rupiah(goal.saved)} in {goal.name} back to a wallet first.")
             return redirect_after_save(request, _detail_url(goal))
-        SavingsGoal.objects.filter(pk=goal.pk).update(deleted_at=timezone.now(), is_main=False)
+        SavingsGoal.objects.filter(pk=goal.pk).update(deleted_at=timezone.now())
         messages.success(request, "Goal deleted.")
         return redirect_after_save(request, reverse("finance:goals"))
     return render_form(

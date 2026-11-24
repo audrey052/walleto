@@ -46,7 +46,7 @@ class BudgetAdmin(admin.ModelAdmin):
 
 @admin.register(SavingsGoal)
 class SavingsGoalAdmin(admin.ModelAdmin):
-    list_display = ["name", "user", "target", "deadline", "start_date", "is_main", "completed_at", "deleted_at"]
+    list_display = ["name", "user", "target", "deadline", "start_date", "position", "completed_at", "deleted_at"]
     search_fields = ["name", "user__email"]
 
 

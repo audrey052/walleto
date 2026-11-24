@@ -35,8 +35,10 @@ class GoalTestCase(TestCase):
         self.gopay = Wallet.objects.create(user=self.user, name="GoPay", type="ewallet", initial_balance=300_000)
 
     def goal(self, name="Bali trip", target=6_000_000, deadline=date(2027, 6, 30), start=TODAY, user=None, **extra):
+        owner = user or self.user
+        extra.setdefault("position", SavingsGoal.objects.filter(user=owner).count())  # appended, as the form does
         return SavingsGoal.objects.create(
-            user=user or self.user, name=name, target=target, deadline=deadline, start_date=start, **extra
+            user=owner, name=name, target=target, deadline=deadline, start_date=start, **extra
         )
 
     def move(self, goal, wallet, amount, kind=GoalContribution.Kind.DEPOSIT, day=TODAY, note=""):
@@ -138,19 +140,15 @@ class GoalCalculationTests(SimpleTestCase):
     def test_deadline_this_month(self):
         self.assertEqual(goals.months_left(TODAY, date(2026, 11, 30)), 1)
 
-    def _g(self, pk, deadline=None, is_main=False):
-        return SimpleNamespace(pk=pk, deadline=deadline, is_main=is_main, created_at=pk)
+    def _g(self, pk, position):
+        return SimpleNamespace(pk=pk, position=position, created_at=pk)
 
-    def test_main_goal_nearest_deadline(self):
-        bali, laptop, fund = self._g(1, date(2027, 6, 30)), self._g(2, date(2027, 3, 31)), self._g(3)
+    def test_main_goal_is_first_in_order(self):
+        bali, laptop, fund = self._g(1, 2), self._g(2, 0), self._g(3, 1)
         self.assertIs(goals.main_goal([bali, laptop, fund]), laptop)
 
-    def test_main_goal_chosen(self):
-        laptop, fund = self._g(2, date(2027, 3, 31)), self._g(3, is_main=True)
-        self.assertIs(goals.main_goal([laptop, fund]), fund)
-
-    def test_main_goal_oldest_without_deadlines(self):
-        a, b = self._g(5), self._g(4)
+    def test_main_goal_ties_go_to_the_oldest(self):
+        a, b = self._g(5, 0), self._g(4, 0)
         self.assertIs(goals.main_goal([a, b]), b)
         self.assertIsNone(goals.main_goal([]))
 
@@ -324,16 +322,50 @@ class GoalViewTests(GoalTestCase):
         self.assertContains(response, "BCA · Rp7.842.500")
         self.assertContains(response, "Add to this goal")
 
-    def test_make_main(self):
+    def order(self, *goals_in_order):
+        return self.client.post(reverse("finance:goal_reorder"), {"order": [g.pk for g in goals_in_order]})
+
+    def page_order(self):
+        page = self.client.get(reverse("finance:goals"))
+        return [page.context["main"].goal.name] + [s.goal.name for s in page.context["others"]]
+
+    def test_reorder_sets_the_main_goal(self):
         laptop = self.goal(name="Laptop", deadline=date(2027, 3, 31))
         fund = self.goal(name="Emergency fund", deadline=None)
-        self.assertEqual(self.client.get(reverse("finance:goals")).context["main"].goal, laptop)
-        self.post("finance:goal_make_main", fund.pk, htmx=False)
+        bali = self.goal(name="Bali trip")
+        self.assertEqual(self.page_order(), ["Laptop", "Emergency fund", "Bali trip"])
+        self.assertEqual(self.order(fund, bali, laptop).status_code, 204)
+        self.assertEqual(self.page_order(), ["Emergency fund", "Bali trip", "Laptop"])
+
+    def test_reorder_keeps_unlisted_goals_after_the_listed_ones(self):
+        a, b, c = self.goal(name="A"), self.goal(name="B"), self.goal(name="C")
+        self.order(c)
+        self.assertEqual(self.page_order(), ["C", "A", "B"])
+
+    def test_reorder_needs_post(self):
+        self.assertEqual(self.client.get(reverse("finance:goal_reorder")).status_code, 405)
+
+    def test_new_goal_goes_last(self):
+        self.goal(name="Laptop")
+        self.post("finance:goal_create", data={"name": "Bali trip", "target": "6.000.000"})
+        self.assertEqual(self.page_order(), ["Laptop", "Bali trip"])
+
+    def test_reopened_goal_goes_last(self):
+        done = self.goal(name="Bike", target=1_000, completed_at=NOW)
+        self.goal(name="Laptop")
+        self.post("finance:goal_reopen", done.pk, htmx=False)
+        self.assertEqual(self.page_order(), ["Laptop", "Bike"])
+
+    def test_no_make_main_button_and_handles_only_with_two_goals(self):
+        goal = self.goal(name="Laptop")
         page = self.client.get(reverse("finance:goals"))
-        self.assertEqual(page.context["main"].goal, fund)
-        self.assertEqual([s.goal for s in page.context["others"]], [laptop])
-        self.post("finance:goal_make_main", laptop.pk, htmx=False)
-        self.assertEqual(SavingsGoal.objects.filter(is_main=True).get(), laptop)
+        self.assertNotContains(page, "Make main goal")
+        self.assertNotContains(page, "drag-handle")
+        self.assertNotContains(self.client.get(reverse("finance:goal_detail", args=[goal.pk])), "Make main goal")
+        self.goal(name="Bali trip")
+        page = self.client.get(reverse("finance:goals"))
+        self.assertContains(page, "drag-handle", count=2)
+        self.assertContains(page, "vendor/sortable.min.js")
 
     def test_complete_only_when_reached(self):
         goal = self.goal(target=1_000_000)
@@ -422,9 +454,9 @@ class GoalPageTests(GoalTestCase):
         self.goal(name="Emergency fund", deadline=None)
         self.goal(name="Laptop", deadline=date(2027, 3, 31))
         response = self.page()
-        self.assertEqual(response.context["main"].goal.name, "Laptop")
-        self.assertEqual([s.goal.name for s in response.context["others"]], ["Bali trip", "Emergency fund"])
-        self.assertContains(response, "Other goals")
+        self.assertEqual(response.context["main"].goal.name, "Bali trip")
+        self.assertEqual([s.goal.name for s in response.context["others"]], ["Emergency fund", "Laptop"])
+        self.assertNotContains(response, "Other goals")
         self.assertContains(response, '<div id="modal-root"></div>', html=True)
 
     def test_main_card_figures(self):
@@ -505,8 +537,16 @@ class GoalPrivacyTests(GoalTestCase):
     def test_another_users_goal_is_not_found(self):
         for name in ("finance:goal_detail", "finance:goal_edit", "finance:goal_deposit", "finance:goal_withdraw", "finance:goal_delete"):
             self.assertEqual(self.client.get(reverse(name, args=[self.theirs.pk])).status_code, 404, name)
-        for name in ("finance:goal_make_main", "finance:goal_complete", "finance:goal_reopen"):
+        for name in ("finance:goal_complete", "finance:goal_reopen"):
             self.assertEqual(self.client.post(reverse(name, args=[self.theirs.pk])).status_code, 404, name)
+
+    def test_reorder_ignores_another_users_goals(self):
+        mine = self.goal()
+        self.client.post(reverse("finance:goal_reorder"), {"order": [self.theirs.pk, mine.pk]})
+        self.theirs.refresh_from_db()
+        self.assertEqual(self.theirs.position, 0)
+        mine.refresh_from_db()
+        self.assertEqual(mine.position, 0)
 
     def test_another_users_movement_is_not_found(self):
         url = reverse("finance:goal_movement_delete", args=[self.their_move.pk])

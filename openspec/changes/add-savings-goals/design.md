@@ -27,7 +27,7 @@
 ### 1. Two models; a withdrawal is a movement with a kind
 
 The models:
-- `SavingsGoal`: `user`, `name`, `target` (BigInteger, ≥ 1000), `deadline` (nullable), `start_date`, `is_main`, `completed_at` (nullable), `deleted_at` (nullable), `created_at`, `updated_at`.
+- `SavingsGoal`: `user`, `name`, `target` (BigInteger, ≥ 1000), `deadline` (nullable), `start_date`, `position`, `completed_at` (nullable), `deleted_at` (nullable), `created_at`, `updated_at`.
 - `GoalContribution`: `user`, `goal`, `wallet` (required, PROTECT), `kind` (`deposit` or `withdrawal`), `amount` (> 0, check constraint), `date`, `note`, `created_at`.
 
 The goal's saved amount is the sum of deposits minus withdrawals. It is never stored.
@@ -64,7 +64,7 @@ Pure functions over integers and dates:
 - `status(saved, target, start, deadline, today)` uses integer cross-multiplication, with no float;
 - `months_left(today, deadline)` = `(deadline.year - today.year) * 12 + deadline.month - today.month + 1`;
 - `per_month(to_go, months)` = ceiling division;
-- `main_goal(goals)` returns the goal with `is_main`, else the nearest deadline, else the oldest goal;
+- `main_goal(goals)` returns the first goal by `position` (then oldest);
 - `saved_series(start, today, movements)` gives the end-of-day saved amount;
 - `plan_series(start, deadline, target)` gives the straight line, two points.
 
@@ -91,7 +91,7 @@ All routes live in `finance/urls.py` under the existing `/savings-goals/` addres
 | GET, POST | `/savings-goals/<id>/edit/` | edit (modal) |
 | GET, POST | `/savings-goals/<id>/add/` | deposit (modal) |
 | GET, POST | `/savings-goals/<id>/withdraw/` | withdrawal (modal) |
-| POST | `/savings-goals/<id>/main/` | make main goal |
+| POST | `/savings-goals/order/` | save the drag-and-drop order (`order` = active goal ids, first = main) |
 | POST | `/savings-goals/<id>/complete/`, `/reopen/` | complete, reopen |
 | GET, POST | `/savings-goals/<id>/delete/` | confirm, then soft delete |
 | GET, POST | `/savings-goals/movement/<id>/delete/` | confirm, then delete a movement |
@@ -105,7 +105,7 @@ All routes live in `finance/urls.py` under the existing `/savings-goals/` addres
 The layout follows `App.tsx` `.savings-feature` (grid `1.8fr 1fr`, 40px padding) and the `.insight-row` below it:
 - The ledger lines are 9 bars, `round(min(1, saved/target) × 9)` of them filled.
 - The poetic copy, the "01" number and the eyebrow sentence are left out (docs/STYLE.md). The eyebrow becomes the label "Main goal".
-- "Make main goal" is offered on the other goals' rows and on the detail page.
+- The main goal is the first in the user's order (decision 11). There is no "Make main goal" button and no "Other goals" heading.
 
 ### 8. ApexCharts, vendored and only on the detail page
 
@@ -132,6 +132,15 @@ The layout follows `App.tsx` `.savings-feature` (grid `1.8fr 1fr`, 40px padding)
 - **"New laptop"**: target Rp15.000.000, deadline about 4 months out, with small deposits from Bank Jago. Sized to be behind.
 
 A test checks both statuses and that every wallet stays at Rp0 or more, as for demo budgets.
+
+### 11. Goal order by drag and drop (revised after the first review)
+
+- `SavingsGoal.position` replaces `is_main`. Migration `0006` numbers existing goals in the order the old rule gave: the chosen main goal first, then nearest deadline, then oldest.
+- The page renders the main card and the other goals as siblings of one sortable list. SortableJS 1.15.2 (vendored like htmx, about 44 KB, Savings goals page only) handles mouse and touch dragging; native HTML drag and drop doesn't work on touch screens.
+- The grip handle also moves a goal with the arrow keys, for keyboard users.
+- Each move posts the full order to `/savings-goals/order/`. Ids that aren't the user's active goals are ignored. When the first goal changes, the page reloads so the new main goal gets the big card.
+
+*Rejected: keeping "Make main goal" next to drag and drop.* That would be two ways to do the same thing, which is the duplication the developer asked to remove. *Rejected: native drag and drop,* because it doesn't work on touch screens.
 
 ## Risks / Trade-offs
 

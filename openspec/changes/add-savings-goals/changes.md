@@ -95,6 +95,12 @@ This is the implementation log for this change. It lists what was created or mod
 
 ## Revision after the first review (2026-11-24)
 
+- **Goal order by drag and drop instead of "Make main goal".** The developer asked for drag and drop and removed the "Make main goal" button and the "Other goals" heading. `SavingsGoal.position` replaces `is_main` (migration `finance.0006_goal_position`, which keeps the existing order). The spec's "Main goal" requirement and design decision 11 were rewritten.
+- **New route** `POST /savings-goals/order/` (`finance:goal_reorder`). The route `/savings-goals/<id>/main/` is removed.
+- **New dependency:** `static/vendor/sortable.min.js` (SortableJS 1.15.2, MIT), loaded only on Savings goals.
+- **No close icon in modals.** All modals (`components/modal_form.html`, and `components/modal.html` in the style guide) drop the ✕. Cancel, Escape and a click outside already close them.
+- **Verified in Edge** with the demo account: Sortable attached, two handles; ArrowUp on the second goal made it main after the reload, and ArrowDown put it back; the edit modal shows only Delete, Cancel and Save changes, and Escape closes it.
+
 - **Wallets trend column removed** at the developer's request: `finance/history.py` (with its goal-movement query) and the `{% sparkline %}` tag are deleted, and so is the main wallets spec's "30-day balance trend" requirement. The delta's "Wallets page and total balance" no longer mentions the trend.
 
 ## Verification
