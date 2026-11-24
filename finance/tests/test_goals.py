@@ -1,7 +1,7 @@
 """add-savings-goals: models, balances, calculations, forms, views, page, detail and privacy."""
 
 import csv
-from datetime import date, datetime, timedelta, timezone as dt_timezone
+from datetime import date, datetime, timezone as dt_timezone
 from types import SimpleNamespace
 from unittest import mock
 
@@ -15,7 +15,6 @@ from finance.forms import (
 )
 
 from finance.demo import build_demo
-from finance.history import balance_history
 from finance.models import Category, GoalContribution, SavingsGoal, Transfer, Wallet
 
 from .test_views import make_user
@@ -77,15 +76,6 @@ class GoalBalanceTests(GoalTestCase):
         self.goal(name="Old", deleted_at=NOW)
         kept = self.goal()
         self.assertEqual(list(SavingsGoal.objects.for_user(self.user)), [kept])
-
-    def test_trend_counts_a_deposit(self):
-        goal = self.goal(start=TODAY - timedelta(days=10))
-        self.move(goal, self.bca, 1_000_000, day=TODAY - timedelta(days=2))
-        wallets = list(Wallet.objects.for_user(self.user).with_balance())
-        with self.assertNumQueries(3):
-            points = balance_history(wallets, TODAY)[self.bca.pk]
-        self.assertEqual(points[-3:], [6_842_500] * 3)
-        self.assertEqual(points[-4], 7_842_500)
 
     def test_transfer_overdraft_sees_goal_money(self):
         from finance.forms import TransferForm

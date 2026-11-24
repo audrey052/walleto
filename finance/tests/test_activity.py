@@ -202,6 +202,18 @@ class TransactionsPageTests(ActivityTestCase):
         self.assertIsNone(response.context["selected_wallet"])
         self.assertContains(response, "GoFood")
 
+    def test_one_add_transaction_button(self):
+        # Empty month: only the empty state's button. With entries: only the heading's.
+        empty = self.client.get(self.url).content.decode()
+        self.assertEqual(empty.count("Add transaction"), 1)
+        self.assertIn("No transactions in November 2026", empty)
+        self.tx("GoFood")
+        full = self.client.get(self.url).content.decode()
+        self.assertEqual(full.count("Add transaction"), 1)
+        # A search with no results keeps the heading button (that empty state only offers Clear filters).
+        filtered = self.client.get(self.url, {"q": "nothing-like-this"}).content.decode()
+        self.assertEqual(filtered.count("Add transaction"), 1)
+
     def test_no_results_empty_state(self):
         self.tx("GoFood")
         response = self.client.get(self.url, {"q": "nothing-like-this"})

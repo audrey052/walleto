@@ -3,7 +3,7 @@
 **Created:** 2026-11-23
 **Last edited:** 2026-11-23
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `89bd29e` fix: version the app css and js urls so browsers load the latest files
 **Branch:** `main`, parent `2b48268`
 **OpenSpec change:** none (asset delivery)
 **Trigger:** After `5cec7fa`, the developer saw no dot separators in money fields.

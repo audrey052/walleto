@@ -28,10 +28,13 @@
           {% icon "transactions" size=16 %} Transfer
         </a>
       {% endif %}
-      <a href="{% url 'finance:transaction_create' %}" class="btn btn-primary"
-         hx-get="{% url 'finance:transaction_create' %}" hx-target="#modal-root">
-        {% icon "plus" size=16 %} Add transaction
-      </a>
+      {# Hidden while the empty state below shows its own "Add transaction", so there is only one. #}
+      {% if entries or has_filters or not has_wallets %}
+        <a href="{% url 'finance:transaction_create' %}" class="btn btn-primary"
+           hx-get="{% url 'finance:transaction_create' %}" hx-target="#modal-root">
+          {% icon "plus" size=16 %} Add transaction
+        </a>
+      {% endif %}
     </div>
   </div>
 

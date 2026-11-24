@@ -3,7 +3,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Wallets page and total balance
-The Wallets page SHALL show a balance panel with the total balance of the user's active wallets, the number of active wallets and today's date, followed by a "Your wallets" table with one row per active wallet in the order they were added. Each row SHALL show the wallet name, its type, its 30-day balance trend and its balance, and SHALL open the Transactions page filtered to that wallet when chosen. A wallet's balance SHALL equal its starting balance, plus its income, minus its expenses, plus transfers into it, minus transfers out of it, minus money added from it to savings goals, plus money withdrawn from goals into it, over all dates. A negative balance SHALL be shown with a minus sign.
+The Wallets page SHALL show a balance panel with the total balance of the user's active wallets, the number of active wallets and today's date, followed by a "Your wallets" table with one row per active wallet in the order they were added. Each row SHALL show the wallet name, its type and its balance, and SHALL open the Transactions page filtered to that wallet when chosen. A wallet's balance SHALL equal its starting balance, plus its income, minus its expenses, plus transfers into it, minus transfers out of it, minus money added from it to savings goals, plus money withdrawn from goals into it, over all dates. A negative balance SHALL be shown with a minus sign.
 
 #### Scenario: Total across wallets
 - **WHEN** a user has active wallets with balances Rp7.842.500, Rp647.500 and Rp485.000

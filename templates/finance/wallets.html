@@ -1,5 +1,5 @@
 {% extends "layouts/app.html" %}
-{% load icons money charts %}
+{% load icons money %}
 
 {% block title %}Wallets{% endblock %}
 
@@ -11,10 +11,6 @@
       <p class="mt-1.5 text-body text-secondary">{{ active_section.subtitle }}</p>
     </div>
     <div class="flex flex-wrap items-center gap-3">
-      <a href="{% url 'finance:wallet_create' %}" class="btn"
-         hx-get="{% url 'finance:wallet_create' %}" hx-target="#modal-root">
-        {% icon "plus" size=15 %} Add wallet
-      </a>
       {% if can_transfer %}
         <a href="{% url 'finance:transfer_create' %}?next={% url 'finance:wallets' %}" class="btn btn-primary"
            hx-get="{% url 'finance:transfer_create' %}?next={% url 'finance:wallets' %}" hx-target="#modal-root">
@@ -57,93 +53,53 @@
 
     {# "Your wallets" table #}
     <section aria-labelledby="your-wallets">
-      <div class="mb-[17px] flex items-start justify-between gap-4 sm:items-center">
-        <h2 id="your-wallets" class="text-section font-semibold">
-          Your wallets <span class="ml-1.5 rounded-[3px] bg-[#f1f2eb] px-[5px] py-0.5 align-[1px] text-[11px] font-semibold text-[#8c9180]">{{ wallets|length }}</span>
-        </h2>
-        <span class="flex items-center gap-1.5 text-caption text-muted">
-          {% icon "calendar" size=13 %} {{ history_start|date:"j M" }}–{{ today|date:"j M Y" }}
-        </span>
-      </div>
+      <h2 id="your-wallets" class="mb-[17px] text-section font-semibold">
+        Your wallets <span class="ml-1.5 rounded-[3px] bg-[#f1f2eb] px-[5px] py-0.5 align-[1px] text-[11px] font-semibold text-[#8c9180]">{{ wallets|length }}</span>
+      </h2>
       <div class="panel overflow-hidden">
-        <div class="hidden grid-cols-[1.6fr_1fr_1fr_1.2fr_24px] items-center gap-3 border-b border-border bg-paper py-3 pr-5 pl-[25px] text-caption text-muted md:grid" aria-hidden="true">
-          <span>Wallet</span>
-          <span>Type</span>
-          <span class="pl-[3px]">Last 30 days</span>
-          <span class="text-right">Balance</span>
-          <span></span>
+        {# Same sizes as the Transactions table: header, padding, 32px icon tile, sideways scroll on narrow screens. #}
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[520px] border-collapse text-left whitespace-nowrap">
+            <thead>
+              <tr class="border-b border-border bg-paper text-caption font-medium text-muted">
+                <th scope="col" class="w-[45%] py-2.5 pr-5 pl-4 font-medium md:pl-6">Wallet</th>
+                <th scope="col" class="px-5 py-2.5 font-medium">Type</th>
+                <th scope="col" class="px-5 py-2.5 text-right font-medium">Balance</th>
+                <th scope="col" class="py-2.5 pr-4 pl-2 md:pr-6"><span class="sr-only">Edit</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for wallet in wallets %}
+                {% url 'finance:transactions' as activity_url %}
+                {% url 'finance:wallet_edit' wallet.pk as edit_url %}
+                {# The row opens the wallet's activity; the edit button stops the click so it only opens the modal. #}
+                <tr class="cursor-pointer border-b border-[#f0efe9] transition-colors last:border-b-0 hover:bg-[#fdfdfa]"
+                    onclick="window.location = '{{ activity_url }}?wallet={{ wallet.pk }}'">
+                  <td class="py-3 pr-5 pl-4 md:pl-6">
+                    <a href="{{ activity_url }}?wallet={{ wallet.pk }}" class="flex items-center gap-3"
+                       aria-label="View {{ wallet.name }} activity, balance {{ wallet.balance|rupiah }}">
+                      <span class="grid size-8 shrink-0 place-items-center rounded-[7px] border border-[#eeede6] bg-[#f8f7f2] text-[#8a8370]">{% icon "wallet" size=17 %}</span>
+                      <strong class="truncate text-control font-semibold">{{ wallet.name }}</strong>
+                    </a>
+                  </td>
+                  <td class="px-5 py-3 text-control text-secondary">{{ wallet.get_type_display }}</td>
+                  <td class="px-5 py-3 text-right text-body font-medium tabular-nums {% if wallet.balance < 0 %}text-clay{% endif %}">{{ wallet.balance|rupiah }}</td>
+                  <td class="py-3 pr-4 pl-2 text-right md:pr-6">
+                    <a href="{{ edit_url }}" class="btn-icon size-8" hx-get="{{ edit_url }}" hx-target="#modal-root"
+                       onclick="event.stopPropagation()" aria-label="Edit {{ wallet.name }}" title="Edit">{% icon "edit" size=15 %}</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
-        {% for wallet in wallets %}
-          {% url 'finance:wallet_edit' wallet.pk as edit_url %}
-          {% url 'finance:wallet_archive' wallet.pk as archive_url %}
-          {# The whole row links to the wallet's activity; the action icons sit above that link (design decision 1). #}
-          <div class="group relative grid min-h-[84px] grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-x-1.5 gap-y-[9px] border-b border-border px-[18px] py-[19px] transition-colors last:border-b-0 hover:bg-[color-mix(in_srgb,var(--color-forest)_2%,white)] md:min-h-[72px] md:grid-cols-[1.6fr_1fr_1fr_1.2fr_24px] md:gap-3 md:py-0 md:pr-5 md:pl-[25px]">
-            <a href="{% url 'finance:transactions' %}?wallet={{ wallet.pk }}" class="absolute inset-0 rounded-none"
-               aria-label="View {{ wallet.name }} activity, balance {{ wallet.balance|rupiah }}"></a>
-            <strong class="row-start-1 truncate text-control font-semibold">{{ wallet.name }}</strong>
-            <span class="col-start-1 row-start-2 text-caption text-secondary md:row-start-1 md:col-start-2 md:text-control">{{ wallet.get_type_display }}</span>
-            <span class="col-start-2 row-start-2 flex items-center justify-end md:col-start-3 md:row-start-1 md:justify-start">
-              <span class="flex text-forest opacity-65 [&_svg]:max-w-full max-md:[&_svg]:h-[27px] max-md:[&_svg]:w-[88px]">{% sparkline wallet.history label=wallet.name|add:", last 30 days" %}</span>
-              {# Desktop: edit and archive appear in the free space after the trend line on hover or focus. #}
-              <span class="relative z-10 ml-auto hidden items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 md:flex">
-                <a href="{{ edit_url }}" class="btn-icon size-8" hx-get="{{ edit_url }}" hx-target="#modal-root" aria-label="Edit {{ wallet.name }}" title="Edit">{% icon "edit" size=15 %}</a>
-                <a href="{{ archive_url }}" class="btn-icon size-8" hx-get="{{ archive_url }}" hx-target="#modal-root" aria-label="Archive {{ wallet.name }}" title="Archive">{% icon "archive" size=15 %}</a>
-              </span>
-            </span>
-            <span class="col-start-2 row-start-1 self-end text-right text-[15px] font-semibold tracking-[-0.4px] whitespace-nowrap tabular-nums md:col-start-4 md:self-center {% if wallet.balance < 0 %}text-clay{% endif %}">{{ wallet.balance|rupiah }}</span>
-            {# Phone: the actions are always visible in the last column. Desktop: the Figma chevron. #}
-            <span class="relative z-10 col-start-3 row-span-2 row-start-1 flex flex-col items-center gap-0.5 md:hidden">
-              <a href="{{ edit_url }}" class="btn-icon size-8" hx-get="{{ edit_url }}" hx-target="#modal-root" aria-label="Edit {{ wallet.name }}" title="Edit">{% icon "edit" size=15 %}</a>
-              <a href="{{ archive_url }}" class="btn-icon size-8" hx-get="{{ archive_url }}" hx-target="#modal-root" aria-label="Archive {{ wallet.name }}" title="Archive">{% icon "archive" size=15 %}</a>
-            </span>
-            <span class="pointer-events-none ml-auto hidden text-muted opacity-65 md:col-start-5 md:block" aria-hidden="true">{% icon "chevron-right" size=15 %}</span>
-          </div>
-        {% endfor %}
         <div class="flex flex-wrap items-center justify-between gap-2.5 border-t border-border bg-paper px-[18px] py-4 md:px-[25px]">
           <a href="{% url 'finance:wallet_create' %}" class="btn-text text-caption"
              hx-get="{% url 'finance:wallet_create' %}" hx-target="#modal-root">{% icon "plus" size=13 %} Add another wallet</a>
-          <span class="text-caption text-muted">All balances in Indonesian Rupiah</span>
         </div>
       </div>
     </section>
 
-    {# .accounts-transfer-note #}
-    <div class="mt-[22px] flex flex-wrap items-center gap-3 rounded-[6px] border border-border bg-[color-mix(in_srgb,var(--color-forest)_3%,var(--color-paper))] p-[17px] md:flex-nowrap md:gap-[13px] md:px-5">
-      <span class="flex text-forest opacity-65" aria-hidden="true">{% icon "transactions" size=19 %}</span>
-      <div class="min-w-0 flex-1 basis-[calc(100%-35px)] md:basis-auto">
-        <h2 class="text-control font-semibold text-forest">A move, not an expense.</h2>
-        <p class="mt-[5px] text-caption leading-relaxed text-secondary">Transfers keep your balances in sync without changing your total or your budget.</p>
-      </div>
-      {% if can_transfer %}
-        <a href="{% url 'finance:transfer_create' %}?next={% url 'finance:wallets' %}" class="btn-text ml-[31px] text-caption md:ml-0"
-           hx-get="{% url 'finance:transfer_create' %}?next={% url 'finance:wallets' %}" hx-target="#modal-root">
-          Move money {% icon "arrow-right" size=14 %}
-        </a>
-      {% endif %}
-    </div>
-
-    {% if recent_transfers %}
-      <section class="mt-7" aria-labelledby="recent-transfers">
-        <h2 id="recent-transfers" class="mb-[17px] text-section font-semibold">Recent transfers</h2>
-        <div class="panel overflow-hidden">
-          {% for transfer in recent_transfers %}
-            {% url 'finance:transfer_edit' transfer.pk as transfer_url %}
-            <a href="{{ transfer_url }}?next={% url 'finance:wallets' %}"
-               hx-get="{{ transfer_url }}?next={% url 'finance:wallets' %}" hx-target="#modal-root"
-               class="flex items-center gap-3 border-b border-border px-3.5 py-3.5 transition-colors last:border-b-0 hover:bg-[#fdfdfa] md:px-[22px] md:py-[15px]">
-              <span class="grid size-8 shrink-0 place-items-center rounded-[7px] border border-[#eeede6] bg-[#f8f7f2] text-[#8a8370]">{% icon "transactions" size=16 %}</span>
-              <span class="min-w-0 flex-1">
-                <strong class="flex items-center gap-2 text-control font-semibold">
-                  {{ transfer.from_wallet.name }}<span class="text-muted">{% icon "arrow-right" size=12 %}</span>{{ transfer.to_wallet.name }}
-                </strong>
-                <span class="mt-[5px] block text-caption break-words text-muted">{{ transfer.note|default:"Between your wallets" }} · {{ transfer.date|date:"j M Y" }}</span>
-              </span>
-              <span class="text-control font-medium whitespace-nowrap tabular-nums">{{ transfer.amount|rupiah }}</span>
-            </a>
-          {% endfor %}
-        </div>
-      </section>
-    {% endif %}
   {% else %}
     <section class="panel">
       <div class="empty-state">

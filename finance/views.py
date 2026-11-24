@@ -1,5 +1,3 @@
-from datetime import timedelta
-
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -9,11 +7,7 @@ from django.views.decorators.http import require_POST
 from core.htmx import redirect_after_save, render_form
 
 from .forms import WalletForm
-from .history import balance_history
-from .models import SavingsGoal, Transfer, Wallet
-
-HISTORY_DAYS = 30
-
+from .models import SavingsGoal, Wallet
 
 def _own_wallet(request, pk):
     """Another user's wallet answers 404, as if it did not exist (wallets spec)."""
@@ -25,9 +19,6 @@ def wallet_list(request):
     today = timezone.localdate()
     wallets = Wallet.objects.for_user(user)
     active = list(wallets.active().with_balance())
-    history = balance_history(active, today)
-    for wallet in active:
-        wallet.history = history[wallet.pk]
     # Balance by type (wallets spec, "Balance by wallet type"); a type with no wallets is Rp0.
     breakdown = [
         {"label": label, "total": sum(w.balance for w in active if w.type == kind)}
@@ -46,8 +37,6 @@ def wallet_list(request):
             "total_balance": sum(w.balance for w in active),
             "breakdown": breakdown,
             "today": today,
-            "history_start": today - timedelta(days=HISTORY_DAYS - 1),
-            "recent_transfers": Transfer.objects.for_user(user).select_related("from_wallet", "to_wallet")[:3],
             "can_transfer": len(active) >= 2,
             # wallets spec, "Money set aside in goals": active goals only; completed money was used.
             "set_aside": sum(g.saved for g in SavingsGoal.objects.for_user(user).active().with_saved()),
@@ -55,7 +44,7 @@ def wallet_list(request):
     )
 
 
-def _wallet_form_response(request, form, *, title, description, action, submit_label):
+def _wallet_form_response(request, form, *, title, description, action, submit_label, archive_url=None):
     return render_form(
         request,
         {
@@ -65,6 +54,9 @@ def _wallet_form_response(request, form, *, title, description, action, submit_l
             "action": action,
             "body": "finance/_wallet_fields.html",
             "submit_label": submit_label,
+            # Archiving lives in the edit modal (wallets spec, "Wallet row actions").
+            "delete_url": archive_url,
+            "delete_label": "Archive wallet",
             "cancel_url": reverse("finance:wallets"),
         },
     )
@@ -100,6 +92,7 @@ def wallet_edit(request, pk):
         description=None,
         action=reverse("finance:wallet_edit", args=[wallet.pk]),
         submit_label="Save changes",
+        archive_url=reverse("finance:wallet_archive", args=[wallet.pk]),
     )
 
 

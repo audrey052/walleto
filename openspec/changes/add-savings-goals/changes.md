@@ -93,6 +93,10 @@ This is the implementation log for this change. It lists what was created or mod
 - **"New goal" in the heading only appears once there is an active goal.** With no goals, the empty state's "Create a goal" is the only create button (developer request after the first commit).
 - **The main card has a "View history" link** next to "Edit goal", so the detail page is reachable from the card. The goal name links there too.
 
+## Revision after the first review (2026-11-24)
+
+- **Wallets trend column removed** at the developer's request: `finance/history.py` (with its goal-movement query) and the `{% sparkline %}` tag are deleted, and so is the main wallets spec's "30-day balance trend" requirement. The delta's "Wallets page and total balance" no longer mentions the trend.
+
 ## Verification
 
 - `python manage.py test`: 310 tests OK.

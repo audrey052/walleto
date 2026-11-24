@@ -55,7 +55,7 @@ These count every movement, including those of completed and deleted goals. A co
 
 Effects:
 - The transfer overdraft check and the transfer preview pick this up without changes.
-- `history.py` gets a third query for goal movements in the window, so the trend still costs a fixed number of queries.
+- The Wallets 30-day trend (`history.py`) that this decision extended was removed on 2026-11-24 at the developer's request.
 
 ### 4. Calculations in `finance/goals.py`
 

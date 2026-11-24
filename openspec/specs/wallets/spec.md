@@ -48,7 +48,7 @@ Amount fields SHALL accept whole Rupiah written with dots, commas or spaces as t
 - **THEN** the wallet is saved with a balance of Rp0
 
 ### Requirement: Wallets page and total balance
-The Wallets page SHALL show a balance panel with the total balance of the user's active wallets, the number of active wallets and today's date, followed by a "Your wallets" table with one row per active wallet in the order they were added. Each row SHALL show the wallet name, its type, its 30-day balance trend and its balance, and SHALL open the Transactions page filtered to that wallet when chosen. A wallet's balance SHALL equal its starting balance, plus its income, minus its expenses, plus transfers into it, minus transfers out of it, over all dates. A negative balance SHALL be shown with a minus sign.
+The Wallets page SHALL show a balance panel with the total balance of the user's active wallets, the number of active wallets and today's date, followed by a "Your wallets" table with one row per active wallet in the order they were added. Each row SHALL show the wallet name, its type and its balance, and SHALL open the Transactions page filtered to that wallet when chosen. A wallet's balance SHALL equal its starting balance, plus its income, minus its expenses, plus transfers into it, minus transfers out of it, over all dates. A negative balance SHALL be shown with a minus sign.
 
 #### Scenario: Total across wallets
 - **WHEN** a user has active wallets with balances Rp7.842.500, Rp647.500 and Rp485.000
@@ -121,31 +121,13 @@ Next to the total, the balance panel SHALL show the summed balance of the user's
 - **WHEN** a user has BCA (bank) Rp7.842.500, Jago (bank) Rp3.275.000, GoPay (e-wallet) Rp647.500 and no cash wallet
 - **THEN** the panel shows Bank accounts Rp11.117.500, E-wallets Rp647.500 and Cash Rp0
 
-### Requirement: 30-day balance trend
-Each row SHALL show a small line of the wallet's balance at the end of each of the last 30 days, ending today in Jakarta time. The balance at the end of a day SHALL count every transaction and transfer dated on or before that day. The table heading SHALL show the date range, for example "19 Oct–17 Nov 2026".
-
-#### Scenario: Trend follows activity
-- **WHEN** GoPay ended 16 November at Rp400.000 and a Rp67.500 expense is dated 17 November
-- **THEN** the last two points of GoPay's trend are Rp400.000 and Rp332.500
-
-#### Scenario: No activity
-- **WHEN** a wallet has no transactions or transfers in the last 30 days
-- **THEN** its trend is a flat line at its current balance
-
 ### Requirement: Wallet row actions
-Each wallet row SHALL offer edit and archive actions as icons that appear when the row is hovered or has keyboard focus, and are always visible on screens narrower than 768 pixels. Choosing an action SHALL open its modal and SHALL NOT open the wallet's activity.
+Each wallet row SHALL end with an always-visible edit icon that opens the edit modal and SHALL NOT open the wallet's activity. Archiving SHALL be offered inside the edit modal as "Archive wallet", which asks for confirmation. The wallets table SHALL use the same sizes as the Transactions table: header, row padding, a 32-pixel icon tile, and sideways scrolling on narrow screens.
 
 #### Scenario: Edit from a row
-- **WHEN** a user hovers the BCA row and chooses the edit icon
+- **WHEN** a user chooses the edit icon on the BCA row
 - **THEN** the edit modal for BCA opens and the Transactions page is not opened
 
-### Requirement: Recent transfers on Wallets
-When the user has transfers, the Wallets page SHALL list the three most recent ones (by date, then creation), each with "From → To", its note (or "Between your wallets") and date, and its amount. Choosing one SHALL open its edit modal. The page SHALL also show a note that transfers move money without changing the total, with a "Move money" action that opens the transfer modal when the user has at least two active wallets.
-
-#### Scenario: Three most recent
-- **WHEN** a user has five transfers
-- **THEN** the Recent transfers list shows the three latest, newest first
-
-#### Scenario: No transfers
-- **WHEN** a user has never made a transfer
-- **THEN** no Recent transfers list is shown
+#### Scenario: Archive from the edit modal
+- **WHEN** a user opens BCA's edit modal and chooses "Archive wallet"
+- **THEN** the archive confirmation replaces the form, and confirming archives BCA
