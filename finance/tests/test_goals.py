@@ -471,6 +471,15 @@ class GoalPageTests(GoalTestCase):
         self.assertContains(response, "to reach your target by June 2027.")
         self.assertContains(response, "On track")
 
+    def test_main_card_opens_the_goal(self):
+        # The whole card links to the detail page, where Edit lives; no separate links on the card.
+        goal = self.goal()
+        response = self.page()
+        self.assertContains(response, f'href="{reverse("finance:goal_detail", args=[goal.pk])}" class="absolute inset-0')
+        self.assertNotContains(response, "Edit goal")
+        self.assertNotContains(response, "View history")
+        self.assertNotContains(response, reverse("finance:goal_edit", args=[goal.pk]))
+
     def test_reached(self):
         goal = self.goal(target=1_000_000)
         self.move(goal, self.bca, 1_000_000)

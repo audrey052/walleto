@@ -3,7 +3,7 @@
 **Created:** 2026-11-24
 **Last edited:** 2026-11-24
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `9ed75f9` fix: start transfers from wallets only
 **Branch:** `main`, parent `d4284f7`
 **OpenSpec change:** none (page layout; no spec requires the button)
 **Trigger:** The developer asked to remove the Transfer button from Transactions and keep transfers on Wallets.

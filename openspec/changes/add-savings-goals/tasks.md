@@ -22,7 +22,7 @@
 
 - [x] 4.1 Move the section to `finance:goals` (remove `core:savings` and its placeholder view, update `core/sections.py` and the URL tests); verify the sidebar link opens the new page and existing shell tests pass
 - [x] 4.2 `templates/finance/goals.html`:
-  - the main goal card after the Figma `.savings-feature` (label, name, deadline and status, saved of target, progress, progress line or "Your goal, reached.", to go, "Add to this goal", "Edit goal", 9 ledger lines);
+  - the main goal card after the Figma `.savings-feature` (label, name, deadline and status, saved of target, progress, progress line or "Your goal, reached.", to go, "Add to this goal", 9 ledger lines; the card opens the goal);
   - the "Put aside … a month" row;
   - the other goals list with "Make main goal";
   - the Completed section, the empty state, and `#modal-root`.

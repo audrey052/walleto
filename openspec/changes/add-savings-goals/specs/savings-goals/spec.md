@@ -84,15 +84,15 @@ For a goal with a deadline that is not reached and not past its deadline, the ap
 - **THEN** it shows Rp750.000 a month
 
 ### Requirement: Savings goals page
-The Savings goals page SHALL feature the main goal in a large card with its name, saved of target, progress bar, progress line, amount to go, deadline and status, and the actions "Add to this goal" and "Edit goal". When the main goal has a monthly amount, a line below the card SHALL say "Put aside <amount> a month to reach your target by <Month YYYY>." The other active goals SHALL be listed below, without a heading, with their progress, saved of target, deadline and status.
+The Savings goals page SHALL feature the main goal in a large card with its name, saved of target, progress bar, progress line, amount to go, deadline and status, and the action "Add to this goal". When the main goal has a monthly amount, a line below the card SHALL say "Put aside <amount> a month to reach your target by <Month YYYY>." The other active goals SHALL be listed below, without a heading, with their progress, saved of target, deadline and status.
 
 #### Scenario: Several goals
 - **WHEN** a user has active goals "Bali trip", "Emergency fund" and "Laptop"
 - **THEN** one of them is shown in the large card and the other two are listed below it
 
 #### Scenario: Open a goal
-- **WHEN** a user chooses "Laptop" in the list
-- **THEN** the Laptop goal detail page opens
+- **WHEN** a user chooses "Laptop" in the list, or anywhere on the main card outside "Add to this goal"
+- **THEN** that goal's detail page opens, which is where the goal is edited
 
 ### Requirement: Main goal
 The user's active goals SHALL keep an order that the user sets by dragging a goal's handle, or by focusing the handle and pressing the up or down arrow key. The first goal in the order SHALL be the main goal, shown in the large card; the others follow in order. The order SHALL be saved right away. A new or reopened goal SHALL go to the end of the order.

@@ -25,16 +25,18 @@
       {% url 'finance:goal_detail' goal.pk as detail_url %}
       <div data-goal-id="{{ goal.pk }}">
       {# Main goal card, after the Figma `.savings-feature` (grid 1.8fr / 1fr, 40px padding). #}
-      <section class="panel relative grid gap-8 p-6 md:grid-cols-[1.8fr_1fr] md:gap-[50px] md:p-10" aria-labelledby="main-goal-name">
+      <section class="panel relative grid gap-8 p-6 transition-colors hover:bg-[#fdfdfa] md:grid-cols-[1.8fr_1fr] md:gap-[50px] md:p-10" aria-labelledby="main-goal-name">
+        {# The whole card opens the goal's history (edit lives there); the buttons sit above this link. #}
+        <a href="{{ detail_url }}" class="absolute inset-0 rounded-panel" aria-label="Open {{ goal.name }}"></a>
         <div class="min-w-0">
           <div class="flex items-center justify-between gap-3">
             <p class="eyebrow">Main goal</p>
-            {% if others %}<button type="button" class="drag-handle btn-icon size-8 shrink-0 cursor-grab touch-none -my-2 -mr-2 text-muted active:cursor-grabbing"
+            {% if others %}<button type="button" class="drag-handle btn-icon relative z-10 size-8 shrink-0 cursor-grab touch-none -my-2 -mr-2 text-muted active:cursor-grabbing"
                         aria-label="Move {{ goal.name }}. Drag, or use the up and down arrow keys." title="Drag to reorder"
                         @keydown.up.prevent="move($el, -1)" @keydown.down.prevent="move($el, 1)">{% icon "grip" size=16 %}</button>{% endif %}
           </div>
           <h2 id="main-goal-name" class="mt-3.5 text-[25px] font-semibold tracking-[-0.9px] [overflow-wrap:anywhere]">
-            <a href="{{ detail_url }}" class="hover:text-forest">{{ goal.name }}</a>
+            {{ goal.name }}
           </h2>
           <p class="mt-3 flex flex-wrap items-center gap-2 text-caption text-muted">
             {% if goal.deadline %}By {{ goal.deadline|date:"j M Y" }}{% else %}No deadline{% endif %}
@@ -49,7 +51,7 @@
             <span>{% if main.reached %}Your goal, reached.{% else %}{{ main.percent }}% of the way there{% endif %}</span>
             <span>{{ main.to_go|rupiah }} to go</span>
           </div>
-          <div class="mt-7 flex flex-wrap items-center gap-5">
+          <div class="relative z-10 mt-7 flex w-fit flex-wrap items-center gap-5">
             {% if main.reached %}
               <form method="post" action="{% url 'finance:goal_complete' goal.pk %}">
                 {% csrf_token %}
@@ -59,9 +61,6 @@
               <a href="{% url 'finance:goal_deposit' goal.pk %}" class="btn btn-primary"
                  hx-get="{% url 'finance:goal_deposit' goal.pk %}" hx-target="#modal-root">{% icon "plus" size=16 %} Add to this goal</a>
             {% endif %}
-            <a href="{% url 'finance:goal_edit' goal.pk %}" class="btn-text"
-               hx-get="{% url 'finance:goal_edit' goal.pk %}" hx-target="#modal-root">Edit goal {% icon "arrow-right" size=15 %}</a>
-            <a href="{{ detail_url }}" class="btn-text text-secondary">View history</a>
           </div>
         </div>
         {# Figma ledger lines: 9 rising bars, filled by how much is saved. #}

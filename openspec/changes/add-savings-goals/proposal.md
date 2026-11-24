@@ -14,7 +14,7 @@ Walleto shows what was spent and what is left for the month, but not what the us
   - saved (deposits minus withdrawals), percent, and the amount to go;
   - with a deadline, months left, the amount needed per month, and a status: **on track** or **behind** against a straight-line plan from the goal's start date to its deadline. A goal whose deadline has passed is **past deadline**.
 - **Savings goals page,** replacing the placeholder:
-  - The main goal uses the Figma card: name, saved "of" target, progress bar, "X% of the way there" or "Your goal, reached.", "Rp… to go", "Add to this goal", "Edit goal", and the ledger-lines illustration.
+  - The main goal uses the Figma card: name, saved "of" target, progress bar, "X% of the way there" or "Your goal, reached.", "Rp… to go", "Add to this goal", and the ledger-lines illustration; the whole card opens the goal, where Edit is.
   - The user orders their goals by drag and drop; the first goal is the main goal.
   - Below the card, a row "Put aside Rp… a month to reach your target by <month>" when the goal has a deadline.
   - A compact list of the other active goals, and a "Completed" section.
