@@ -14,10 +14,6 @@ def _placeholder(request, key):
     )
 
 
-def dashboard(request):
-    return _placeholder(request, "dashboard")
-
-
 def assistant(request):
     return _placeholder(request, "assistant")
 

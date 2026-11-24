@@ -1,0 +1,171 @@
+{% extends "layouts/app.html" %}
+{% load icons money %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+  {# Everything below is swapped by the month picker (add-dashboard design decision 6). #}
+  <div id="dashboard">
+    {# Page heading with the month picker, as on Transactions and Budget #}
+    <div class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <h1>Dashboard</h1>
+        <p class="mt-1.5 text-body text-secondary">{{ active_section.subtitle }}</p>
+      </div>
+      <div class="flex h-9 w-fit items-center rounded-control border border-border bg-surface">
+        <a href="{{ prev_url }}" class="mx-0.5 grid size-7 place-items-center rounded-chip text-secondary hover:bg-forest-tint hover:text-forest" aria-label="Previous month"
+           hx-get="{{ prev_url }}" hx-target="#dashboard" hx-select="#dashboard" hx-swap="outerHTML" hx-push-url="true">{% icon "chevron-left" size=16 %}</a>
+        <span class="flex min-w-[150px] items-center justify-center gap-2 text-control font-medium">
+          <span class="text-muted">{% icon "calendar" size=15 %}</span>{{ month_start|date:"F Y" }}
+        </span>
+        {% if next_url %}
+          <a href="{{ next_url }}" class="mx-0.5 grid size-7 place-items-center rounded-chip text-secondary hover:bg-forest-tint hover:text-forest" aria-label="Next month"
+             hx-get="{{ next_url }}" hx-target="#dashboard" hx-select="#dashboard" hx-swap="outerHTML" hx-push-url="true">{% icon "chevron-right" size=16 %}</a>
+        {% else %}
+          <span class="mx-0.5 grid size-7 place-items-center text-secondary opacity-30" aria-hidden="true">{% icon "chevron-right" size=16 %}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    {# Balance overview: Remaining, then income and expenses (Figma .balance-overview) #}
+    <section class="mb-6 grid overflow-hidden rounded-panel border border-border bg-surface lg:grid-cols-[1.55fr_1fr_1fr]">
+      <div class="bg-forest-tint px-6 py-6 md:px-7{% if not s.has_plan %} flex flex-col items-center justify-center text-center{% endif %}">
+        {% if s.has_plan %}
+          <p class="text-caption font-medium text-secondary">Remaining this month</p>
+          <p class="mt-2">
+            {% if s.remaining < 0 %}{% amount s.remaining css_class="amount-display text-clay" %}{% else %}{% amount s.remaining css_class="amount-display" %}{% endif %}
+          </p>
+          {% with p=s.projection %}
+            <p class="mt-1.5 flex items-center gap-2 text-caption text-secondary" data-projection>
+              <span class="status-dot {% if p.kind == 'over' or p.kind == 'ended_over' %}status-dot-red{% endif %}"></span>
+              {% if p.kind == "meal_days" %}{% if p.days %}Enough for {{ p.days }} day{{ p.days|pluralize }} of meals at {{ daily_meal|rupiah }} a day{% else %}Not enough for a day of meals at {{ daily_meal|rupiah }}{% endif %}
+              {% elif p.kind == "over" %}Over your plan by {{ p.amount|rupiah }}
+              {% elif p.kind == "ended_left" %}Ended {{ month_start|date:"F" }} with {{ p.amount|rupiah }} left
+              {% elif p.kind == "ended_over" %}Ended {{ month_start|date:"F" }} {{ p.amount|rupiah }} over plan
+              {% endif %}
+            </p>
+          {% endwith %}
+          <div class="mt-3">
+            {% include "components/progress.html" with percent=s.plan_percent label="Monthly plan spent" %}
+            <p class="mt-2.5 text-caption text-muted"><strong class="font-medium text-secondary">{{ s.plan_spent|rupiah }}</strong> of {{ s.plan|rupiah }} planned</p>
+          </div>
+        {% else %}
+          <p class="text-section font-semibold">{{ month_start|date:"F" }} has no monthly plan</p>
+          <p class="mt-1 max-w-sm text-caption text-secondary">Set one on Budget to see what is left and how long it lasts.</p>
+          <a href="{{ budget_url }}" class="btn btn-primary mt-5">Set a monthly plan</a>
+        {% endif %}
+      </div>
+
+      {% for metric in metrics %}
+        <div class="relative flex flex-col justify-center border-t border-border px-6 py-6 lg:border-t-0 {% if not forloop.first %}lg:before:absolute lg:before:top-[26px] lg:before:left-0 lg:before:h-[calc(100%-52px)] lg:before:w-px lg:before:bg-border{% endif %}">
+          <span class="mb-3 grid size-7 place-items-center rounded-full {% if metric.kind == 'income' %}bg-forest-soft text-forest{% else %}bg-[#f3eee6] text-[#9c8265]{% endif %}">
+            {% if metric.kind == "income" %}{% icon "arrow-down" size=16 %}{% else %}{% icon "arrow-up" size=16 %}{% endif %}
+          </span>
+          <p class="text-caption font-medium text-secondary">{{ metric.label }}</p>
+          <p class="mt-1 text-[26px] font-semibold leading-snug">{% amount metric.value %}</p>
+          <p class="mt-2 flex items-center gap-1 text-caption whitespace-nowrap {% if metric.change is None %}text-muted{% elif metric.good %}text-forest{% else %}text-clay{% endif %}" data-change>
+            {% if metric.change is None %}—{% else %}{% if metric.change.up %}{% icon "arrow-up" size=13 %}{% else %}{% icon "arrow-down" size=13 %}{% endif %} {{ metric.change.text }}{% endif %}
+            <span class="ml-0.5 text-muted">vs. last month</span>
+          </p>
+        </div>
+      {% endfor %}
+    </section>
+
+    <div class="grid gap-6 lg:grid-cols-[1.65fr_1fr]">
+      {# Daily spending (Figma SpendingChart, add-dashboard design decision 4) #}
+      <section class="panel flex flex-col">
+        <div class="flex items-center justify-between gap-4 px-5 pt-[22px] md:px-6">
+          <div>
+            <h2 class="text-section font-semibold">Daily spending</h2>
+            <p class="mt-1 text-caption text-muted">Expenses per day</p>
+          </div>
+          {% if s.chart.budget_line is not None %}
+            <span class="flex items-center gap-1.5 text-caption whitespace-nowrap text-muted"><i class="w-3.5 border-t border-dashed border-[#a8ad9a]"></i>Daily budget</span>
+          {% endif %}
+        </div>
+        <div class="day-chart mx-5 mt-7 flex min-h-[186px] flex-1 gap-3 md:mx-6">
+          <div class="flex w-8 shrink-0 -translate-y-1 flex-col justify-between text-right text-[11px] leading-none text-muted" aria-hidden="true">
+            {% for label in s.chart.y_labels %}<span>{{ label }}</span>{% endfor %}
+          </div>
+          <div class="relative w-full">
+            <div class="pointer-events-none absolute inset-0 flex flex-col justify-between" aria-hidden="true">
+              {% for _ in "12345" %}<i class="h-px w-full bg-[#f0f0e9]"></i>{% endfor %}
+            </div>
+            {% if s.chart.budget_line is not None %}
+              <div class="day-chart-budget" style="bottom: {{ s.chart.budget_line }}%;" data-daily-budget>
+                <span>{{ s.daily_budget|rupiah }}</span>
+              </div>
+            {% endif %}
+            <ol class="relative flex h-full items-end justify-between gap-[2px] md:gap-1" aria-label="Expenses per day in {{ month_start|date:'F Y' }}">
+              {% for bar in s.chart.bars %}
+                <li class="relative flex h-full min-w-0 flex-1 items-end justify-center">
+                  {% if bar.is_future %}
+                    <span class="mb-0 h-[3px] w-[7px] max-w-full rounded-[1px] bg-[#e9ebe3]" aria-hidden="true"></span>
+                  {% else %}
+                    <button type="button" class="day-bar {% if bar.is_today %}is-today{% endif %}" style="height: {{ bar.height }}%;"
+                            aria-label="{{ bar.day|date:'j M' }}: {{ bar.amount|rupiah }}">
+                      <span class="day-bar-tip" aria-hidden="true"><small>{{ bar.day|date:"j M" }}</small>{{ bar.amount|rupiah }}</span>
+                    </button>
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ol>
+            <div class="absolute inset-x-0 top-[calc(100%+10px)] flex justify-between gap-[2px] text-[11px] text-muted md:gap-1" aria-hidden="true">
+              {% for label in axis_labels %}
+                <span class="min-w-0 flex-1 text-center {% if label.is_today %}font-bold text-forest{% endif %}">{{ label.text }}</span>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <div class="mx-5 mt-10 flex items-center justify-between border-t border-[#f0f0e9] pt-3.5 pb-4 text-caption text-muted md:mx-6">
+          <span class="flex items-center gap-1.5"><i class="size-1.5 rounded-[1px] bg-[#97af98]"></i>Daily expenses</span>
+          <span>01–{{ chart_last_day|stringformat:"02d" }} {{ month_start|date:"M Y" }}</span>
+        </div>
+      </section>
+
+      {# Where it goes (Figma .category-panel) #}
+      <section class="panel flex flex-col">
+        <div class="flex items-center justify-between gap-4 px-5 pt-[22px] md:px-6">
+          <div>
+            <h2 class="text-section font-semibold">Where it goes</h2>
+            <p class="mt-1 text-caption text-muted">Spending by category</p>
+          </div>
+          <a href="{{ budget_url }}" class="btn-icon" aria-label="View budget">{% icon "arrow-right" size=17 %}</a>
+        </div>
+        {% if s.categories %}
+          <ul class="flex-1 px-3 pt-4 md:px-4">
+            {% for line in s.categories %}
+              <li>
+                <a href="{{ transactions_url }}&amp;category={{ line.category.pk }}" class="block rounded-control px-2 py-2 transition-colors hover:bg-hover"
+                   aria-label="{{ line.category.name }}: {{ line.spent|rupiah }}, open in Transactions">
+                  <span class="flex items-center justify-between gap-3 text-control">
+                    <span class="flex min-w-0 items-center gap-2"><i class="size-2 shrink-0 rounded-full" style="background: {{ line.category.color }};"></i><span class="truncate">{{ line.category.name }}</span></span>
+                    <strong class="font-semibold whitespace-nowrap">{{ line.spent|rupiah }}</strong>
+                  </span>
+                  <span class="mt-2 flex items-center gap-3">
+                    <span class="flex-1">
+                      {% if line.percent is not None %}
+                        {% include "components/progress.html" with percent=line.percent color=line.category.color label=line.category.name %}
+                      {% else %}
+                        <span class="progress block"><span style="width: {{ line.bar }}%; background: {{ line.category.color }};"></span></span>
+                      {% endif %}
+                    </span>
+                    <span class="w-14 text-right text-caption whitespace-nowrap {% if line.percent is None %}text-muted{% elif line.percent > 100 %}text-clay{% elif line.percent >= 85 %}text-amber{% else %}text-secondary{% endif %}">
+                      {% if line.percent is None %}No limit{% else %}{{ line.percent }}%{% endif %}
+                    </span>
+                  </span>
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+          <p class="mx-5 mt-3 border-t border-[#f0f0e9] pt-3.5 pb-4 text-caption text-muted md:mx-6">Percentage of each category's budget</p>
+        {% else %}
+          <div class="empty-state flex-1 justify-center py-10">
+            <span class="empty-state-icon">{% icon "budget" size=22 %}</span>
+            <p class="text-body text-secondary">No expenses in {{ month_start|date:"F" }} yet.</p>
+          </div>
+        {% endif %}
+      </section>
+    </div>
+  </div>
+{% endblock %}

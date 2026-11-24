@@ -246,6 +246,36 @@
     @apply bg-clay;
   }
 
+  /* Dashboard daily chart (Figma SpendingChart, add-dashboard design decision 4) */
+  .day-chart-budget {
+    @apply pointer-events-none absolute inset-x-0 z-[2] border-b border-dashed border-[#bdc3ae];
+  }
+  .day-chart-budget > span {
+    @apply absolute right-0 bottom-1 bg-surface px-0.5 text-[11px] text-muted;
+  }
+  .day-bar {
+    @apply relative z-[3] block min-h-px w-full max-w-4 rounded-t-[2px] bg-[#adc1ad] transition-colors;
+  }
+  .day-bar:hover,
+  .day-bar:focus-visible,
+  .day-bar.is-today {
+    @apply bg-forest;
+  }
+  .day-bar-tip {
+    @apply pointer-events-none absolute bottom-[calc(100%+9px)] left-1/2 z-10 hidden -translate-x-1/2 flex-col gap-1 rounded-chip bg-ink px-2.5 py-2 text-caption whitespace-nowrap text-white shadow-popover;
+  }
+  .day-bar-tip > small {
+    @apply text-[11px] text-[#cdcec6];
+  }
+  .day-bar:hover > .day-bar-tip,
+  .day-bar:focus-visible > .day-bar-tip {
+    @apply flex;
+  }
+  .day-bar:hover,
+  .day-bar:focus-visible {
+    @apply z-10;
+  }
+
   /* Empty state */
   .empty-state {
     @apply flex flex-col items-center px-5 py-14 text-center;
