@@ -3,7 +3,7 @@
 **Created:** 2026-11-24
 **Last edited:** 2026-11-24
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `d4284f7` feat: new logo, sidebar handle, Home
 **Branch:** `main`, parent `f3a84a3`
 **OpenSpec change:** none (brand)
 **Trigger:** The developer found the plain wallet icon in the logo ugly and asked for a cute one; of three drafts they chose "A: smiling wallet". They then asked to remove the "My workspace › <Page>" breadcrumb from the top bar, and for a more playful way to open and close the sidebar; they chose a handle on the sidebar's edge. Last, they asked to call the Dashboard "Home", as the phone bar already did.

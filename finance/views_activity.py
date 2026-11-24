@@ -134,7 +134,6 @@ def transaction_list(request):
         "query": query,
         "has_filters": bool(wallet or category or query),
         "clear_url": transactions_url(year, month),
-        "can_transfer": wallets.active().count() >= 2,
         "has_wallets": wallets.active().exists(),
         "current_url": request.get_full_path(),
     }

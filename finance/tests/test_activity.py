@@ -214,6 +214,10 @@ class TransactionsPageTests(ActivityTestCase):
         filtered = self.client.get(self.url, {"q": "nothing-like-this"}).content.decode()
         self.assertEqual(filtered.count("Add transaction"), 1)
 
+    def test_no_transfer_button(self):
+        # Transfers start from Wallets only; their rows here still open the edit modal.
+        self.assertNotContains(self.client.get(self.url), reverse("finance:transfer_create"))
+
     def test_no_results_empty_state(self):
         self.tx("GoFood")
         response = self.client.get(self.url, {"q": "nothing-like-this"})

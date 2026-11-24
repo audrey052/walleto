@@ -22,12 +22,6 @@
           <span class="mx-0.5 grid size-7 place-items-center text-secondary opacity-30" aria-hidden="true">{% icon "chevron-right" size=16 %}</span>
         {% endif %}
       </div>
-      {% if can_transfer %}
-        <a href="{% url 'finance:transfer_create' %}?next={{ current_url|urlencode }}" class="btn"
-           hx-get="{% url 'finance:transfer_create' %}?next={{ current_url|urlencode }}" hx-target="#modal-root">
-          {% icon "transactions" size=16 %} Transfer
-        </a>
-      {% endif %}
       {# Hidden while the empty state below shows its own "Add transaction", so there is only one. #}
       {% if entries or has_filters or not has_wallets %}
         <a href="{% url 'finance:transaction_create' %}" class="btn btn-primary"
