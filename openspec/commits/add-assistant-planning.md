@@ -3,7 +3,7 @@
 **Created:** 2026-11-25
 **Last edited:** 2026-11-25
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `367b8b5`
 **Branch:** `main`, parent `742413c`
 **OpenSpec change:** `add-assistant-planning` (MVP 7, part 2), archived to `openspec/changes/archive/2026-11-25-add-assistant-planning/`
 **Trigger:** The developer asked to "continue MVP 7 part 2". They chose to base the plan on what is left of the monthly plan, and chose a full one-page report.

@@ -1,7 +1,19 @@
+{% load icons %}
 {# Usage: {% include "components/field.html" with field=form.email %} #}
 <div class="field {% if field.errors %}field-invalid{% endif %}">
   <label class="field-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-  {{ field }}
+  {% if field.widget_type == "password" %}
+    {# Eye button shows or hides the password; without JavaScript it stays hidden and the field works as before. #}
+    <div class="relative" x-data="{ show: false }">
+      {{ field }}
+      <button type="button" x-cloak class="password-toggle" @click="show = !show; $el.previousElementSibling.type = show ? 'text' : 'password'"
+              :aria-label="show ? 'Hide password' : 'Show password'" :aria-pressed="show.toString()">
+        <span x-show="!show">{% icon "eye" size=18 %}</span><span x-show="show">{% icon "eye-off" size=18 %}</span>
+      </button>
+    </div>
+  {% else %}
+    {{ field }}
+  {% endif %}
   {% for error in field.errors %}
     <p class="field-error" id="{{ field.auto_id }}_error">{{ error }}</p>
   {% empty %}

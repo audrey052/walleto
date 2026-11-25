@@ -408,6 +408,14 @@
   .filter-box input {
     @apply h-full min-w-0 flex-1 bg-transparent text-control text-ink outline-none placeholder:text-placeholder;
   }
+  /* Show/hide password button inside the field */
+  .password-toggle {
+    @apply absolute inset-y-0 right-0 grid w-10 place-items-center text-muted hover:text-ink focus-visible:text-ink;
+  }
+  .relative:has(> .password-toggle) > input {
+    @apply pr-10;
+  }
+
   /* Assistant plan card amounts: plain text until Edit */
   .plan-amount {
     @apply w-28 rounded-chip border border-transparent bg-transparent px-1.5 py-0.5 text-right text-control font-semibold tabular-nums outline-none;
