@@ -1,6 +1,6 @@
 """The six main sections of Walleto, in sidebar order.
 
-Titles and subtitles follow docs/STYLE.md section 6.
+Titles and subtitles are short and plain: no taglines (app-shell spec).
 """
 
 SECTIONS = [

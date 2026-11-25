@@ -324,6 +324,11 @@ document.addEventListener("alpine:init", () => {
       this.editing = true;
       this.$nextTick(() => this.$root.querySelector("input[data-amount]")?.focus());
     },
+    // Show the typed amount with thousands dots again (70000 -> 70.000) once the box is left.
+    tidy(input) {
+      const value = Number(String(input.value).replace(/[^0-9]/g, "")) || 0;
+      input.value = rupiah(value).replace(/^.*Rp/, "");
+    },
     recount() {
       let total = 0;
       this.$root.querySelectorAll("input[data-amount]").forEach((input) => {
@@ -595,4 +600,56 @@ document.addEventListener("htmx:beforeSwap", (event) => window.walletoChat.settl
   }, true);
   document.addEventListener("DOMContentLoaded", () => enhanceAll(document));
   document.addEventListener("htmx:load", (event) => enhanceAll(event.target));
+})();
+
+// Failed and slow requests (polish-and-deploy design decision 6, app-shell spec).
+// HTMX does not swap 4xx/5xx responses, so the page (and a modal with what was typed) stays as it was;
+// this only tells the user. Same look as the server toasts in components/toasts.html.
+(function () {
+  const INFO = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>';
+  const CLOSE = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+
+  function stack() {
+    let box = document.getElementById("client-toasts");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "client-toasts";
+      box.className = "pointer-events-none fixed right-4 bottom-24 z-50 flex flex-col gap-2 md:right-6 md:bottom-6";
+      box.setAttribute("aria-live", "assertive");
+      // A popover sits in the top layer, so the toast shows above an open <dialog> modal too.
+      box.setAttribute("popover", "manual");
+      box.style.cssText = "top:auto;left:auto;margin:0;border:0;padding:0;background:transparent;overflow:visible";
+      document.body.append(box);
+    }
+    if (box.showPopover) {
+      if (box.matches(":popover-open")) box.hidePopover();
+      box.showPopover(); // re-open so it is the newest top-layer element, above any modal
+    }
+    return box;
+  }
+
+  window.walletoToast = function (text) {
+    const box = stack();
+    if ([...box.querySelectorAll("[data-toast-text]")].some((p) => p.textContent === text)) return; // no duplicates
+    const toast = document.createElement("div");
+    toast.className = "toast toast-error pointer-events-auto";
+    toast.setAttribute("role", "alert");
+    toast.innerHTML = `<span class="toast-icon">${INFO}</span><div class="flex-1 pt-0.5"><p class="text-control text-ink" data-toast-text></p></div>` +
+      `<button type="button" class="btn-icon -my-1.5 size-7" aria-label="Dismiss">${CLOSE}</button>`;
+    toast.querySelector("[data-toast-text]").textContent = text; // text, never HTML
+    const close = () => toast.remove();
+    toast.querySelector("button").addEventListener("click", close);
+    setTimeout(close, 4000);
+    box.append(toast);
+  };
+
+  document.addEventListener("htmx:responseError", () => window.walletoToast("Something went wrong. Try again."));
+  document.addEventListener("htmx:sendError", () => window.walletoToast("You're offline. Check your connection and try again."));
+
+  // Thin bar at the top while any request runs; CSS delays it ~300ms so fast requests never flash it.
+  let running = 0;
+  const root = document.documentElement;
+  document.addEventListener("htmx:beforeRequest", () => { running += 1; root.classList.add("is-loading"); });
+  const done = () => { running = Math.max(0, running - 1); if (!running) root.classList.remove("is-loading"); };
+  document.addEventListener("htmx:afterRequest", done);
 })();

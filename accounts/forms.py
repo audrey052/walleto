@@ -9,7 +9,7 @@ from .models import User
 
 
 def _style_fields(form):
-    """Give every widget the shared `.input` class from docs/STYLE.md."""
+    """Give every widget the shared `.input` class (the app's one text-field style)."""
     for field in form.fields.values():
         css = field.widget.attrs.get("class", "")
         field.widget.attrs["class"] = f"{css} input".strip()

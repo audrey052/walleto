@@ -8,15 +8,19 @@ db.sqlite3
 staticfiles/
 media/
 
-# Secrets
+# Secrets (copy .env.example to .env)
 .env
 
-# Node (Tailwind)
+# Node and the built stylesheet (built from static/src/app.css by `npm run css:build`)
 node_modules/
 static/css/
-WORKPLAN.md
-.claude
-docs/design/
-decisions.md
-STYLE.md
 
+# Local notes, kept out of the repository by choice
+WORKPLAN.md
+docs/STYLE.md
+docs/decisions.md
+docs/design/
+
+# Local tools
+.claude/
+.codeduck/

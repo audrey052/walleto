@@ -1,5 +1,5 @@
 /*
- * Walleto stylesheet. Source of truth for values: docs/STYLE.md.
+ * Walleto stylesheet. The design tokens below are the single source of truth for colours, type and spacing.
  * Build: npm run css:watch (development) / npm run css:build (production).
  * Light mode only.
  */
@@ -17,7 +17,7 @@
   src: url("../fonts/nunito-latin.woff2") format("woff2");
 }
 
-/* ---------- Tokens (STYLE.md sections 1-3) ---------- */
+/* ---------- Tokens: colours, type, radii, shadows ---------- */
 @theme {
   --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
 
@@ -56,7 +56,7 @@
   --shadow-toast: 0 6px 25px rgb(28 40 21 / 0.08);
   --shadow-modal: 0 15px 60px rgb(29 40 24 / 0.14);
 
-  /* Type scale (STYLE.md section 2) */
+  /* Type scale */
   --text-display: 40px;
   --text-display--line-height: 1.2;
   --text-title: 28px;
@@ -112,7 +112,7 @@
   }
 }
 
-/* ---------- Components (STYLE.md section 5) ---------- */
+/* ---------- Components ---------- */
 @layer components {
   /* Buttons */
   .btn {
@@ -408,6 +408,25 @@
   .filter-box input {
     @apply h-full min-w-0 flex-1 bg-transparent text-control text-ink outline-none placeholder:text-placeholder;
   }
+  /* Loading bar (app-shell spec): shown only after 300ms, so fast requests never flash it */
+  .loading-bar {
+    @apply pointer-events-none fixed inset-x-0 top-0 z-[60] h-0.5 overflow-hidden opacity-0;
+    transition: opacity 150ms ease 0ms;
+  }
+  .loading-bar::before {
+    @apply absolute inset-y-0 w-1/3 bg-forest;
+    content: "";
+    animation: loading-slide 1.1s ease-in-out infinite;
+  }
+  .is-loading .loading-bar {
+    @apply opacity-100;
+    transition-delay: 300ms;
+  }
+  @keyframes loading-slide {
+    from { left: -33%; }
+    to { left: 100%; }
+  }
+
   /* Show/hide password button inside the field */
   .password-toggle {
     @apply absolute inset-y-0 right-0 grid w-10 place-items-center text-muted hover:text-ink focus-visible:text-ink;

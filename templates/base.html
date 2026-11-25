@@ -13,6 +13,7 @@
   {% block head %}{% endblock %}
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  <div class="loading-bar" aria-hidden="true"></div>
   {% block body %}{% endblock %}
   {% include "components/toasts.html" %}
 </body>

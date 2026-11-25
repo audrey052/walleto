@@ -13,6 +13,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 import sys
+
+import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -23,14 +26,31 @@ load_dotenv(BASE_DIR / ".env")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# Required: fail loudly at startup if missing.
-SECRET_KEY = os.environ["SECRET_KEY"]
+# Required: fail loudly at startup if missing or empty.
+SECRET_KEY = os.environ.get("SECRET_KEY", "")
+if not SECRET_KEY:
+    raise ImproperlyConfigured("Set SECRET_KEY in the environment (see .env.example).")
 
 # Values from .env are strings, so compare instead of bool("False") (which is True).
 # Defaults to False when missing, the safe choice for production.
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = []
+TESTING = "test" in sys.argv
+
+
+def _env_list(name):
+    return [item.strip() for item in os.getenv(name, "").split(",") if item.strip()]
+
+
+# Host names this site answers to (polish-and-deploy design decision 1): a comma-separated
+# ALLOWED_HOSTS, plus the name Render gives the service, plus localhost while debugging.
+ALLOWED_HOSTS = _env_list("ALLOWED_HOSTS")
+if os.getenv("RENDER_EXTERNAL_HOSTNAME"):
+    ALLOWED_HOSTS.append(os.environ["RENDER_EXTERNAL_HOSTNAME"])
+if DEBUG or TESTING:
+    ALLOWED_HOSTS += ["localhost", "127.0.0.1", "testserver"]
+LOCAL_HOSTS = {"localhost", "127.0.0.1", "testserver"}
+CSRF_TRUSTED_ORIGINS = [f"https://{host.lstrip('.')}" for host in ALLOWED_HOSTS if host not in LOCAL_HOSTS]
 
 
 # Application definition
@@ -41,7 +61,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
-    "django.contrib.staticfiles",
+    "config.staticfiles.WalletoStaticFilesConfig",  # django.contrib.staticfiles without static/src/
     "accounts",
     "core",
     "finance",
@@ -50,10 +70,14 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # Serves the collected static files when debugging is off (design decision 3).
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # Wraps the sign-in redirect below so HTMX requests get a full-page HX-Redirect instead.
+    "core.middleware.HtmxLoginRedirect",
     # Every view requires sign-in unless marked with @login_not_required.
     "django.contrib.auth.middleware.LoginRequiredMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
@@ -84,11 +108,15 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# DATABASE_URL (Neon PostgreSQL in production, design decision 2); SQLite locally.
+# conn_health_checks replaces a connection Neon closed while its compute was suspended.
+# An empty DATABASE_URL (as copied from .env.example) means "not set", not an empty URL.
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+    "default": dj_database_url.parse(
+        os.getenv("DATABASE_URL") or f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
 
@@ -128,6 +156,16 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"
+# Fingerprinted, compressed files in production; plain storage under tests (no manifest needed).
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+        if TESTING or DEBUG
+        else "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -142,7 +180,7 @@ LOGIN_REDIRECT_URL = "core:dashboard"
 LOGOUT_REDIRECT_URL = "accounts:login"
 
 # Tests create many users; the production hasher is deliberately slow.
-if "test" in sys.argv:
+if TESTING:
     PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 # Assistant (add-assistant design decisions 4 and 6). Key and model come from .env;
@@ -153,3 +191,26 @@ OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "")
 OPENAI_REASONING_EFFORT = os.environ.get("OPENAI_REASONING_EFFORT", "")
 ASSISTANT_DAILY_LIMIT = 30  # questions per user per day (Asia/Jakarta)
 ASSISTANT_MAX_TOOL_ROUNDS = 4  # tool rounds per question
+
+
+# Production security (design decision 1). Render ends TLS at its proxy and sets X-Forwarded-Proto.
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = not TESTING
+    SECURE_REDIRECT_EXEMPT = [r"^healthz$"]  # Render probes over plain HTTP
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 3600  # raise to a year once the site is stable; no preload
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    # The site lives on a host name we do not own the parent of (*.onrender.com), so HSTS must not
+    # cover subdomains or be preloaded; silence the two checks that ask for it.
+    SILENCED_SYSTEM_CHECKS = ["security.W005", "security.W021"]
+    SECURE_REFERRER_POLICY = "same-origin"
+
+# Errors go to the console, which Render keeps as the service log.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "loggers": {"django": {"handlers": ["console"], "level": "WARNING"}},
+}

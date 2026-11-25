@@ -44,6 +44,12 @@ def rupiah(value):
 
 
 @register.filter
+def thousands(value):
+    """70000 -> '70.000': an amount for an input box, without the Rp prefix."""
+    return _digits(_to_int(value))
+
+
+@register.filter
 def rupiah_signed(value, kind):
     """kind is "income" or "expense"; the amount itself is always positive."""
     number = _to_int(value)

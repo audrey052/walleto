@@ -3,7 +3,7 @@
 **Created:** 2026-11-25
 **Last edited:** 2026-11-25
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `eedb4f7`
 **Branch:** `main`, parent `367b8b5`
 **OpenSpec change:** none (layout only)
 **Trigger:** Before MVP 8 the developer asked to fix the sign-in pages. A first version redesigned the preview panel; the developer asked to keep the panel as it was, remove the tagline, and add an eye button to see the password.

@@ -114,6 +114,17 @@ class DemoSignInTests(TestCase):
         self.client.post(self.url)
         self.assertEqual(Transaction.objects.count(), count)
 
+    def test_visitors_changes_stay(self):
+        # demo-account spec, "Demo data is created once": a later visitor sees earlier changes.
+        self.client.post(self.url)
+        user = User.objects.get(email=DEMO_EMAIL)
+        wallet = Wallet.objects.for_user(user).first()
+        Transaction.objects.create(user=user, wallet=wallet, category=Category.objects.get(user=None, name="Food & drinks"),
+                                   amount=12_345, date=wallet.created_at.date(), description="Added by a visitor")
+        second = self.client_class()
+        second.post(self.url)
+        self.assertTrue(Transaction.objects.filter(user=user, description="Added by a visitor").exists())
+
     def test_get_does_nothing(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 405)

@@ -26,8 +26,8 @@
             <td class="py-1.5 text-right whitespace-nowrap tabular-nums {% if row.left_now < 0 %}text-clay{% else %}text-secondary{% endif %}">{{ row.left_now|rupiah }}</td>
             <td class="py-1.5 text-right">
               {% if card.state == "pending" %}
-                <input type="text" inputmode="numeric" name="amount_{{ row.category_id }}" value="{{ row.amount }}" data-amount
-                       :readonly="!editing" @input="recount()" aria-label="Suggested amount for {{ row.name }}"
+                <input type="text" inputmode="numeric" name="amount_{{ row.category_id }}" value="{{ row.amount|thousands }}" data-amount
+                       :readonly="!editing" @input="recount()" @blur="tidy($el)" aria-label="Suggested amount for {{ row.name }}"
                        class="plan-amount" :class="editing && 'is-editing'">
               {% else %}
                 <span class="font-semibold tabular-nums">{{ row.amount|rupiah }}</span>

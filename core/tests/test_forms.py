@@ -1,7 +1,7 @@
 from django import forms
 from django.test import SimpleTestCase
 
-from .forms import AMOUNT_ERROR, AmountField
+from core.forms import AMOUNT_ERROR, AmountField
 
 
 class AmountFieldTests(SimpleTestCase):

@@ -220,4 +220,8 @@ class AssistantPrivacyTests(AssistantPageCase):
     def test_requires_sign_in(self):
         self.client.logout()
         self.assertEqual(self.client.get(PAGE).status_code, 302)
-        self.assertEqual(self.ask("Hi").status_code, 302)
+        self.assertEqual(self.ask("Hi", htmx=False).status_code, 302)
+        # From the page (HTMX), the browser is sent to sign-in as a full page (app-shell spec).
+        response = self.ask("Hi")
+        self.assertEqual(response.status_code, 204)
+        self.assertTrue(response["HX-Redirect"].startswith("/sign-in/?next="))

@@ -1,0 +1,26 @@
+{% load static assets %}<!doctype html>
+{# Error pages (app-shell spec, "Error pages"): no app shell, no user, no database, so they render even for a 500 without context. #}
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% endblock %} · Walleto</title>
+  <link rel="icon" href="{% static 'img/logo.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{% asset 'css/app.css' %}">
+</head>
+<body>
+  <main class="flex min-h-screen flex-col px-6 py-8 sm:px-12">
+    <a href="{% url 'core:dashboard' %}" class="flex items-center gap-2.5">
+      {% include "components/logo_mark.html" %}
+      <span class="text-[26px] font-extrabold leading-none tracking-[-1.5px]">walleto<span class="text-forest">.</span></span>
+    </a>
+    <div class="mx-auto flex w-full max-w-[420px] flex-1 flex-col items-center justify-center py-12 text-center">
+      <p class="eyebrow">{% block code %}{% endblock %}</p>
+      <h1 class="mt-2">{% block heading %}{% endblock %}</h1>
+      <p class="mt-2 text-body text-secondary">{% block message %}{% endblock %}</p>
+      <a href="{% url 'core:dashboard' %}" class="btn btn-primary mt-6">Go to Home</a>
+    </div>
+    <p class="text-center text-[11px] text-muted">© {% now "Y" %} Walleto. All rights reserved.</p>
+  </main>
+</body>
+</html>

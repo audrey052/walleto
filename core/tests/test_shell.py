@@ -7,7 +7,7 @@ from django.template import Context, Template
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from .templatetags.money import amount, rupiah, rupiah_signed
+from core.templatetags.money import amount, rupiah, rupiah_signed
 
 User = get_user_model()
 

@@ -1,5 +1,5 @@
 {# Usage: {% include "components/progress.html" with percent=68 label="Food & drinks budget" color="#1F5C4A" %} #}
-{# Colour follows STYLE.md: normal below 85% (forest, or `color` when given), amber 85-100%, clay above 100%. #}
+{# Colour: normal below 85% (forest, or `color` when given), amber 85-100%, clay above 100%. #}
 {# `percent` is a whole number, already rounded down by the caller.                                        #}
 <div class="progress {% if percent > 100 %}progress-over{% elif percent >= 85 %}progress-warning{% endif %}"
      role="progressbar" aria-valuemin="0" aria-valuemax="100"
