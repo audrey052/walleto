@@ -3,7 +3,7 @@
 **Created:** 2026-11-25
 **Last edited:** 2026-11-25
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `742413c`
 **Branch:** `main`, parent `ec883a6`
 **OpenSpec change:** none; `openspec/specs/transactions/spec.md` edited directly ("Transactions table", new "Grouped by day")
 **Trigger:** The developer asked for the Transactions table to follow the latest Figma Make design (`TransactionsPage.tsx`, `transactions.css`), grouped by day, then for the filter bar and summary line from the same design (from a screenshot), and finally for every dropdown in the app to look better.

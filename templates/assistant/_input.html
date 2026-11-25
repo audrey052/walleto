@@ -10,7 +10,7 @@
     <form method="post" action="{% url 'assistant:ask' %}" class="assistant-input"
           hx-post="{% url 'assistant:ask' %}" hx-target="#conversation" hx-swap="beforeend"
           hx-disabled-elt="find textarea, find button"
-          hx-on::before-request="walletoChat.send(this)" hx-on::before-swap="walletoChat.settle()" hx-on::after-request="walletoChat.done(this, event)">
+          hx-on::before-request="walletoChat.send(this)" hx-on::after-request="walletoChat.done(this, event)">
       {% csrf_token %}
       <input type="hidden" name="chat" value="{{ conversation.pk }}">
       <textarea name="question" rows="1" required maxlength="1000"

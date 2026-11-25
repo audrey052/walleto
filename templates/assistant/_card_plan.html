@@ -1,0 +1,58 @@
+{% load money %}
+{# Rest-of-month plan (assistant spec, "Plan card and Apply to Budget"); Edit and the live total come from `planCard`. #}
+{% with card=item.card %}
+<div class="plan-card rounded-control border {% if card.state == 'pending' %}border-forest-soft bg-forest-tint{% else %}border-border bg-surface{% endif %} px-4 py-3"
+     data-plan-state="{{ card.state }}" x-data="planCard" data-left="{{ card.left }}" data-days="{{ card.days_left }}">
+  <p class="text-caption font-medium text-secondary">
+    {% if card.state == "applied" %}Applied to Budget · {{ card.label }}{% elif card.state == "expired" %}Plan for {{ card.label }} (month has ended){% else %}Plan for the rest of {{ card.label }} · {{ card.days_left }} day{{ card.days_left|pluralize }} left{% endif %}
+  </p>
+  {% if card.note %}<p class="mt-1 text-caption text-muted">{{ card.note }}</p>{% endif %}
+  <form method="post" action="{% url 'assistant:apply_plan' item.message_id %}"
+        hx-post="{% url 'assistant:apply_plan' item.message_id %}" hx-target="closest .plan-card" hx-swap="outerHTML" hx-disabled-elt="find button">
+    {% csrf_token %}
+    <table class="mt-2 w-full text-control">
+      <thead>
+        <tr class="text-caption text-muted">
+          <th class="py-1 text-left font-normal">Category</th>
+          <th class="py-1 text-right font-normal">Left now</th>
+          <th class="py-1 text-right font-normal">Suggested</th>
+          <th class="py-1 text-right font-normal">Per day</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in card.rows %}
+          <tr class="border-t border-[#e4e8da]">
+            <td class="py-1.5 pr-2">{{ row.name }}</td>
+            <td class="py-1.5 text-right whitespace-nowrap tabular-nums {% if row.left_now < 0 %}text-clay{% else %}text-secondary{% endif %}">{{ row.left_now|rupiah }}</td>
+            <td class="py-1.5 text-right">
+              {% if card.state == "pending" %}
+                <input type="text" inputmode="numeric" name="amount_{{ row.category_id }}" value="{{ row.amount }}" data-amount
+                       :readonly="!editing" @input="recount()" aria-label="Suggested amount for {{ row.name }}"
+                       class="plan-amount" :class="editing && 'is-editing'">
+              {% else %}
+                <span class="font-semibold tabular-nums">{{ row.amount|rupiah }}</span>
+              {% endif %}
+            </td>
+            <td class="py-1.5 text-right whitespace-nowrap text-secondary tabular-nums" data-per-day>{{ row.per_day|rupiah }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if card.state == "pending" %}
+      <p class="mt-2 text-caption" :class="diff === 0 ? 'text-secondary' : 'text-clay'" data-plan-total>
+        <span x-text="totalText">Adds up to {{ card.left|rupiah }} of {{ card.left|rupiah }} left.</span>
+      </p>
+      {% if plan_error %}<p class="mt-1 text-caption text-clay">{{ plan_error }}</p>{% endif %}
+      <div class="mt-3 flex gap-2.5">
+        <button type="submit" class="btn btn-primary" :disabled="diff !== 0">Apply to Budget</button>
+        <button type="button" class="btn" x-cloak x-show="!editing" @click="edit()">Edit</button>
+      </div>
+    {% elif card.state == "applied" %}
+      <a href="{% url 'finance:budget' %}" class="btn-text mt-2">Open Budget</a>
+    {% elif plan_error %}
+      <p class="mt-1 text-caption text-clay">{{ plan_error }}</p>
+    {% endif %}
+  </form>
+</div>
+{% endwith %}

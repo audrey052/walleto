@@ -1,0 +1,84 @@
+{% load money %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Walleto report: {{ f.label }}</title>
+<style>
+  @page { size: A4; margin: 1.6cm 1.6cm 1.4cm; }
+  body { font-family: Helvetica; font-size: 9.5pt; color: #1c1b18; }
+  h1 { font-size: 18pt; margin: 0; color: #1f5c4a; }
+  h2 { font-size: 10.5pt; margin: 14pt 0 5pt; color: #1c1b18; }
+  .muted { color: #6b6a64; }
+  .summary { margin: 8pt 0 4pt; line-height: 1.45; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 8pt; color: #6b6a64; border-bottom: 1pt solid #dddfd4; padding: 3pt 4pt; }
+  td { border-bottom: 0.5pt solid #eceae3; padding: 3pt 4pt; }
+  .num { text-align: right; }
+  .figures td { border: 0; padding: 2pt 0; }
+  .figures .value { font-size: 12pt; font-weight: bold; }
+  .over { color: #b4463a; }
+  .footer { margin-top: 16pt; font-size: 7.5pt; color: #92918a; }
+</style>
+</head>
+<body>
+  <h1>Walleto monthly report</h1>
+  <p class="muted">{{ f.label }}</p>
+  <p class="summary">{{ summary }}</p>
+
+  <table class="figures">
+    <tr>
+      <td><span class="muted">Income</span><br><span class="value">{{ f.income|rupiah }}</span></td>
+      <td><span class="muted">Expenses</span><br><span class="value">{{ f.expenses|rupiah }}</span></td>
+      {% if f.has_plan %}
+        <td><span class="muted">Plan</span><br><span class="value">{{ f.plan|rupiah }}</span></td>
+        <td><span class="muted">Remaining</span><br><span class="value {% if f.remaining < 0 %}over{% endif %}">{{ f.remaining|rupiah }}</span></td>
+      {% else %}
+        <td colspan="2"><span class="muted">No monthly plan</span></td>
+      {% endif %}
+    </tr>
+  </table>
+
+  <h2>Spending by category</h2>
+  {% if f.categories %}
+    <table>
+      <tr><th>Category</th><th class="num">Spent</th><th class="num">Limit</th><th class="num">Used</th></tr>
+      {% for c in f.categories %}
+        <tr>
+          <td>{{ c.name }}</td>
+          <td class="num">{{ c.spent|rupiah }}</td>
+          <td class="num">{% if c.limit %}{{ c.limit|rupiah }}{% else %}No limit{% endif %}</td>
+          <td class="num {% if c.percent and c.percent > 100 %}over{% endif %}">{% if c.percent is not None %}{{ c.percent }}%{% else %}—{% endif %}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p class="muted">No expenses this month.</p>
+  {% endif %}
+
+  <h2>Largest expenses</h2>
+  {% if f.largest %}
+    <table>
+      <tr><th>Date</th><th>Description</th><th>Category</th><th>Wallet</th><th class="num">Amount</th></tr>
+      {% for t in f.largest %}
+        <tr><td>{{ t.date }}</td><td>{{ t.description }}</td><td>{{ t.category }}</td><td>{{ t.wallet }}</td><td class="num">{{ t.amount|rupiah }}</td></tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p class="muted">No expenses this month.</p>
+  {% endif %}
+
+  <h2>Savings goals</h2>
+  {% if f.goals %}
+    <table>
+      <tr><th>Goal</th><th class="num">Saved</th><th class="num">Target</th><th class="num">Progress</th><th>Status</th></tr>
+      {% for g in f.goals %}
+        <tr><td>{{ g.name }}</td><td class="num">{{ g.saved|rupiah }}</td><td class="num">{{ g.target|rupiah }}</td><td class="num">{{ g.percent }}%</td><td>{{ g.status }}</td></tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p class="muted">No active savings goals.</p>
+  {% endif %}
+
+  <p class="footer">Figures computed by Walleto from the transactions you recorded.</p>
+</body>
+</html>

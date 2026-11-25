@@ -408,6 +408,14 @@
   .filter-box input {
     @apply h-full min-w-0 flex-1 bg-transparent text-control text-ink outline-none placeholder:text-placeholder;
   }
+  /* Assistant plan card amounts: plain text until Edit */
+  .plan-amount {
+    @apply w-28 rounded-chip border border-transparent bg-transparent px-1.5 py-0.5 text-right text-control font-semibold tabular-nums outline-none;
+  }
+  .plan-amount.is-editing {
+    @apply border-border-strong bg-surface focus:border-forest;
+  }
+
   /* Styled dropdowns over form selects (enhanceSelect in static/js/app.js) */
   .select-wrap {
     @apply relative;

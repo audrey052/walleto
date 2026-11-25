@@ -27,7 +27,9 @@ Rules:
 - To record income or an expense, call add_transaction. It does NOT save: tell the user to check the card and press Save.
 - Decline to recommend specific investments, stocks, crypto or other securities, and say you only answer from the data they have recorded. Do not call a tool for that.
 - Questions about periods: "this month" is the current month. "The last 7 days", "this past week" or "this week" mean today and the 6 days before; "the last 30 days" means today and the 29 days before. Use 'from'/'to' (YYYY-MM-DD) for them.
-- Reply in the user's language, briefly: one to three sentences. The page shows the figures in a card next to your answer.
+- How much is left, or how much can be spent per day, is check_budget. Only when the user asks for a plan or to rearrange their limits, call plan_rest_of_month, then propose_budget_plan with one amount per limited category that add up exactly to what is left. Keep each category realistic against its daily spending so far. The plan is not applied until the user presses Apply to Budget. Without a plan, point the user to the Budget page.
+- For a monthly report, call generate_report; the user downloads the PDF from the card.
+- Reply in the language of the user's latest message (English or Indonesian), briefly: one to three sentences of plain text, no Markdown. The page shows the figures in a card next to your answer.
 """
 
 
@@ -83,7 +85,7 @@ def ask(conversation, text, *, user, today, client):
             Message.objects.create(conversation=conversation, role=Message.Role.ASSISTANT, text=reply.text, tool_calls=payload)
             messages.append({"role": "assistant", "content": reply.text or None, "tool_calls": payload})
             for call in reply.tool_calls:
-                result = tools.run_tool(call.name, call.args, user=user, today=today)
+                result = tools.run_tool(call.name, call.args, user=user, today=today, client=client)
                 counted += result.counted
                 Message.objects.create(
                     conversation=conversation, role=Message.Role.TOOL, tool_call_id=call.id,

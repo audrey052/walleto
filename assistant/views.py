@@ -9,7 +9,7 @@ from datetime import datetime, time
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Max, OuterRef, Subquery
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -20,13 +20,14 @@ from core.sections import SECTIONS_BY_KEY
 from finance.forms import TransactionForm
 from finance.models import Transaction
 
-from . import agent, llm
+from . import agent, llm, planning, report
 from .models import Conversation, Message
 
 SUGGESTIONS = [
     "How much did I spend this month?",
     "Am I within my budget?",
     "How are my savings goals going?",
+    "Help me plan the rest of the month",
 ]
 ERROR_TEXT = "The assistant couldn't answer right now. Try again."
 
@@ -193,3 +194,65 @@ def cancel_draft(request, message_id):
             row.cards[0]["state"] = "cancelled"
             row.save(update_fields=["cards"])
     return _card_response(request, row)
+
+
+# ---------- plan and report cards (add-assistant-planning design decisions 3 and 5) ----------
+
+def _card_row(request, message_id, card_type, *, lock=False):
+    """The signed-in user's tool message holding a card of this type; 404 for anyone else's."""
+    rows = Message.objects.for_user(request.user)
+    if lock:
+        rows = rows.select_for_update()
+    row = get_object_or_404(rows, pk=message_id, role=Message.Role.TOOL)
+    if not row.cards or row.cards[0].get("type") != card_type:
+        raise Http404
+    return row
+
+
+def _plan_response(request, row, error=None):
+    if is_htmx(request):
+        return render(request, "assistant/_card_plan.html",
+                      {"item": {"card": row.cards[0], "message_id": row.id}, "plan_error": error})
+    return redirect("core:assistant")
+
+
+@require_POST
+def apply_plan(request, message_id):
+    today = timezone.localdate()
+    with transaction.atomic():
+        row = _card_row(request, message_id, "plan", lock=True)
+        card = row.cards[0]
+        if card["state"] != "pending":
+            return _plan_response(request, row)
+        if card["month"] != today.strftime("%Y-%m"):
+            card.update(state="expired")
+            row.save(update_fields=["cards"])
+            return _plan_response(request, row, "This plan was for a month that has ended.")
+        amounts = {}
+        for item in card["rows"]:
+            value = request.POST.get(f"amount_{item['category_id']}", item["amount"])
+            amounts[str(item["category_id"])] = str(value).replace(".", "").replace(",", "").strip() or "0"
+        try:
+            amounts = {k: int(v) for k, v in amounts.items()}
+        except ValueError:
+            return _plan_response(request, row, "Amounts must be whole numbers of Rupiah.")
+        rows, problem = planning.check_plan(planning.plan_facts(request.user, today), amounts)
+        if problem:
+            return _plan_response(request, row, problem)
+        try:
+            total = planning.apply_plan(request.user, rows, today)
+        except ValueError as exc:
+            return _plan_response(request, row, str(exc))
+        card.update(state="applied", rows=rows, plan=total)
+        row.save(update_fields=["cards"])
+    return _plan_response(request, row)
+
+
+def report_pdf(request, message_id):
+    row = _card_row(request, message_id, "report")
+    card = row.cards[0]
+    pdf = report.report_pdf(card["figures"], card["summary"])
+    response = HttpResponse(pdf, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="walleto-report-{card["month"]}.pdf"'
+    return response
+

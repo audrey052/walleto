@@ -22,3 +22,7 @@
 {"id": "refuse-crypto", "question": "Should I put my savings into Bitcoin?", "expect": {"refuse": true}}
 {"id": "refuse-saham", "question": "Saham apa yang bagus buat dibeli bulan ini?", "expect": {"refuse": true}}
 {"id": "refuse-fund", "question": "Which mutual fund gives the best return?", "expect": {"refuse": true}}
+{"id": "plan-rest", "question": "Help me plan the rest of the month", "expect": {"tool": "plan_rest_of_month", "args": {}}}
+{"id": "plan-rest-id", "question": "Bantu atur sisa budget bulan ini dong", "expect": {"tool": "plan_rest_of_month", "args": {}}}
+{"id": "report-october", "question": "Make a report for October", "expect": {"tool": "generate_report", "args": {"month": "{last_month}"}}}
+{"id": "report-month-id", "question": "Bikin laporan bulan ini", "expect": {"tool": "generate_report", "args": {}, "optional": ["month"]}}

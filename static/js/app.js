@@ -307,6 +307,41 @@ document.addEventListener("alpine:init", () => {
     },
   }));
 
+  // Assistant plan card (add-assistant-planning design decision 4): Edit unlocks the amounts, and the
+  // per-day values and the total follow as the user types. The server checks everything again on Apply.
+  Alpine.data("planCard", () => ({
+    editing: false,
+    left: 0,
+    days: 1,
+    diff: 0,
+    totalText: "",
+    init() {
+      this.left = Number(this.$root.dataset.left) || 0;
+      this.days = Math.max(Number(this.$root.dataset.days) || 1, 1);
+      this.recount();
+    },
+    edit() {
+      this.editing = true;
+      this.$nextTick(() => this.$root.querySelector("input[data-amount]")?.focus());
+    },
+    recount() {
+      let total = 0;
+      this.$root.querySelectorAll("input[data-amount]").forEach((input) => {
+        const value = Number(String(input.value).replace(/[^0-9]/g, "")) || 0;
+        total += value;
+        const cell = input.closest("tr")?.querySelector("[data-per-day]");
+        if (cell) cell.textContent = rupiah(Math.floor(value / this.days));
+      });
+      this.diff = total - this.left;
+      if (this.diff === 0) {
+        this.totalText = `Adds up to ${rupiah(total)} of ${rupiah(this.left)} left.`;
+      } else {
+        const side = this.diff > 0 ? "over" : "under";
+        this.totalText = `${rupiah(total)}: ${rupiah(Math.abs(this.diff))} ${side} the ${rupiah(this.left)} left.`;
+      }
+    },
+  }));
+
   // Toast that closes itself after about four seconds.
   Alpine.data("toast", () => ({
     visible: true,
@@ -370,8 +405,9 @@ window.walletoChat = {
       field.style.height = "";
     }
   },
-  settle() {
-    document.getElementById("pending-turn")?.remove();
+  // htmx fires beforeSwap on the swap target (#conversation), not on the form, so this listens there.
+  settle(event) {
+    if (event.detail.target?.id === "conversation") document.getElementById("pending-turn")?.remove();
   },
   done(form, event) {
     if (!event.detail.successful) {
@@ -386,6 +422,8 @@ window.walletoChat = {
     form.querySelector("textarea")?.focus();
   },
 };
+
+document.addEventListener("htmx:beforeSwap", (event) => window.walletoChat.settle(event));
 
 // Styled dropdowns for every form <select class="input"> (modals, form pages, the style guide).
 // The native select stays in the form, hidden, and keeps the value, the label link, validation and

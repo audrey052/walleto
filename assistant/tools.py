@@ -24,6 +24,8 @@ from finance.models import Category, SavingsGoal, Transaction, Wallet
 from finance.periods import Period, parse_period
 from finance.summary import change_tenths, period_summary
 
+from . import planning
+
 
 @dataclass
 class ToolResult:
@@ -282,6 +284,93 @@ def add_transaction(user, today, **args):
     return ToolResult(data, [{"type": "draft", "state": "pending", "fields": fields}])
 
 
+# ---------- planning and reports (add-assistant-planning) ----------
+
+def plan_rest_of_month(user, today, **args):
+    """The current month's facts for a plan; the model then calls propose_budget_plan."""
+    facts = planning.plan_facts(user, today)
+    if not facts.rows:
+        return ToolResult({"month": Period.for_month(today.year, today.month).label, "has_monthly_plan": False,
+                           "note": "This month has no monthly plan. Point the user to the Budget page to set one."})
+    data = {
+        "month": Period.for_month(today.year, today.month).label,
+        "plan": _money(facts.plan),
+        "left_of_limits": _money(facts.left),
+        "days_left": facts.days_left,
+        "categories": [
+            {"category": r.name, "limit": _money(r.limit), "spent": _money(r.spent), "left": _money(r.left),
+             "daily_average_so_far": _money(r.daily_average)}
+            for r in facts.rows
+        ],
+    }
+    if not facts.can_plan:
+        data["note"] = "Nothing is left of the category limits; no plan is possible. Point the user to Budget."
+    else:
+        data["next_step"] = (f"Call propose_budget_plan with one amount per category above; the amounts must add up "
+                             f"exactly to {facts.left} ({rupiah(facts.left)}).")
+    return ToolResult(data)
+
+
+def propose_budget_plan(user, today, **args):
+    """Check the model's amounts and turn them into a plan card (nothing is saved)."""
+    facts = planning.plan_facts(user, today)
+    raw = args.get("amounts") or []
+    if not isinstance(raw, list):
+        return error("'amounts' must be a list of {category, amount}.")
+    amounts = {}
+    for item in raw:
+        if not isinstance(item, dict) or "category" not in item or "amount" not in item:
+            return error("Each amount needs 'category' and 'amount'.")
+        amounts[item["category"]] = item["amount"]
+    rows, problem = planning.check_plan(facts, amounts)
+    if problem:
+        return error(problem)
+    card = {
+        "type": "plan", "state": "pending", "month": facts.month_param,
+        "label": Period.for_month(today.year, today.month).label,
+        "left": facts.left, "days_left": facts.days_left, "plan": facts.plan,
+        "note": str(args.get("note") or "")[:300], "rows": rows,
+    }
+    data = {
+        "plan_card": [{"category": r["name"], "amount": rupiah(r["amount"]), "per_day": rupiah(r["per_day"])} for r in rows],
+        "status": "Not applied. The user can edit the amounts and press Apply to Budget.",
+    }
+    return ToolResult(data, [card])
+
+
+SUMMARY_PROMPT = """Write two or three short sentences summarising this month's money for the user, in English.
+Use only the figures below, written exactly as they appear (for example Rp1.270.000 or 39%).
+Do not add other numbers, do not compute anything, and give no investment advice.
+
+{figures}"""
+
+
+def generate_report(user, today, client=None, **args):
+    """Figures for a month, a checked summary sentence, and a report card (design decision 5)."""
+    month = args.get("month") or today.strftime("%Y-%m")
+    if not MONTH_RE.match(str(month)) or not 1 <= int(str(month)[5:]) <= 12:
+        return error("Give 'month' as YYYY-MM.")
+    year, mon = int(month[:4]), int(month[5:])
+    if not planning.month_has_started(year, mon, today):
+        return error("That month has not started yet; there is no data for a report.")
+    figures = planning.report_figures(user, year, mon, today)
+    summary = ""
+    if client is not None:
+        from .llm import AssistantUnavailable
+
+        try:
+            reply = client.chat([{"role": "user", "content": SUMMARY_PROMPT.format(figures=planning.figures_text(figures))}])
+            summary = (reply.text or "").strip()
+        except AssistantUnavailable:
+            summary = ""
+    if not planning.check_summary(summary, figures):
+        summary = planning.code_summary(figures)
+    card = {"type": "report", "month": figures["month"], "label": figures["label"], "figures": figures, "summary": summary}
+    data = {"report": figures["label"], "summary": summary,
+            "status": "The report is ready; the user can download the PDF from the card."}
+    return ToolResult(data, [card])
+
+
 # ---------- registry and schemas ----------
 
 PERIOD_PROPS = {
@@ -347,6 +436,38 @@ def _schemas(user):
             },
             "required": ["description", "amount", "category", "wallet"],
         },
+        "plan_rest_of_month": {
+            "description": "Facts for planning the rest of the CURRENT month: what is left of each category limit, "
+                           "days left and daily spending so far. Call this first when the user wants a plan.",
+            "properties": {},
+            "required": [],
+        },
+        "propose_budget_plan": {
+            "description": "Propose how much each limited category may still spend this month, after "
+                           "plan_rest_of_month. One amount per limited category; amounts must add up exactly to what "
+                           "is left of the limits. Shows a plan card the user can edit and apply; nothing is saved.",
+            "properties": {
+                "amounts": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "category": enum(expense_categories, "A limited expense category."),
+                            "amount": {"type": "integer", "description": "Whole Rupiah still to spend this month."},
+                        },
+                        "required": ["category", "amount"],
+                        "additionalProperties": False,
+                    },
+                },
+                "note": {"type": "string", "description": "One short sentence on the idea behind the plan."},
+            },
+            "required": ["amounts"],
+        },
+        "generate_report": {
+            "description": "Make the monthly PDF report (figures, category table, largest expenses, goals) for a month.",
+            "properties": {"month": PERIOD_PROPS["month"]},
+            "required": [],
+        },
     }
 
 
@@ -356,7 +477,11 @@ TOOLS = {
     "check_budget": check_budget,
     "get_goal_progress": get_goal_progress,
     "add_transaction": add_transaction,
+    "plan_rest_of_month": plan_rest_of_month,
+    "propose_budget_plan": propose_budget_plan,
+    "generate_report": generate_report,
 }
+NEEDS_CLIENT = {"generate_report"}
 
 
 def tool_specs(user):
@@ -379,7 +504,7 @@ def tool_specs(user):
     ]
 
 
-def run_tool(name, args, *, user, today):
+def run_tool(name, args, *, user, today, client=None):
     """Run one tool. Unknown tools and wrong arguments become an error result."""
     fn = TOOLS.get(name)
     if fn is None:
@@ -390,4 +515,6 @@ def run_tool(name, args, *, user, today):
     unknown = set(args) - allowed
     if unknown:
         return error(f"Unknown arguments: {', '.join(sorted(unknown))}.")
+    if name in NEEDS_CLIENT:
+        return fn(user, today, client=client, **args)
     return fn(user, today, **args)
