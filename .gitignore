@@ -16,11 +16,15 @@ node_modules/
 static/css/
 
 # Local notes, kept out of the repository by choice
+openspec/
+docs/eval_results.md
+docs/DEPLOY.md
 WORKPLAN.md
 docs/STYLE.md
 docs/decisions.md
 docs/design/
 
 # Local tools
+.prettierignore
 .claude/
 .codeduck/
