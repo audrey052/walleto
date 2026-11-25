@@ -97,6 +97,26 @@ def _activity(request):
 
 # ---------- page ----------
 
+def day_groups(page_entries, all_entries):
+    """The page's entries grouped by day, newest first, each with that day's count and totals.
+
+    Counts and totals cover every entry of the day in the period and filters, not only this
+    page, so a day split across two pages shows the same header on both. Transfers and goal
+    movements are counted as entries but are neither income nor expenses (Figma "grouped ledger").
+    """
+    totals = {}
+    for entry, kind in all_entries:
+        day = totals.setdefault(entry.date, {"count": 0, "income": 0, "expense": 0})
+        day["count"] += 1
+        if kind == "transaction":
+            day["income" if entry.is_income else "expense"] += entry.amount
+    groups = []
+    for entry, kind in page_entries:
+        if not groups or groups[-1]["date"] != entry.date:
+            groups.append({"date": entry.date, "entries": [], **totals[entry.date]})
+        groups[-1]["entries"].append((entry, kind))
+    return groups
+
 def transaction_list(request):
     data = _activity(request)
     today, period = data["today"], data["period"]
@@ -122,6 +142,7 @@ def transaction_list(request):
         "page_prev_url": page_url(page.previous_page_number()) if page.has_previous() else None,
         "page_next_url": page_url(page.next_page_number()) if page.has_next() else None,
         "entries": page.object_list,
+        "day_groups": day_groups(page.object_list, entries),
         "entry_count": len(entries),
         "export_url": transactions_url(period, view="finance:transactions_export", **filters),
         "wallet_options": wallets.order_by("is_archived", "created_at"),

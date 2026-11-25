@@ -58,7 +58,7 @@ Choosing the picker's calendar button SHALL open a popover with a calendar of th
 - **THEN** 25 to 30 November cannot be chosen and there is no later month
 
 ### Requirement: Month arrows
-The previous and next arrows SHALL move by whole calendar month. From a whole month they SHALL move to the month before or after it. From another range, previous SHALL open the month before the range's start month and next SHALL open the month after the range's end month. There SHALL be no next arrow when that month starts after today.
+On Home, previous and next arrows SHALL move by whole calendar month; the Transactions filter bar SHALL offer only the calendar, without arrows. From a whole month they SHALL move to the month before or after it. From another range, previous SHALL open the month before the range's start month and next SHALL open the month after the range's end month. There SHALL be no next arrow when that month starts after today.
 
 #### Scenario: Previous from a range
 - **WHEN** the period is 10 to 24 November and the user chooses the previous arrow

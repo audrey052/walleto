@@ -214,10 +214,6 @@
     border-color: color-mix(in srgb, var(--chip, var(--color-chart-1)) 14%, white);
     color: color-mix(in srgb, var(--chip, var(--color-chart-1)) 60%, var(--color-ink));
   }
-  .chip::before {
-    content: "";
-    @apply size-1 rounded-full bg-current opacity-70;
-  }
 
   /* Progress */
   .progress {
@@ -397,6 +393,112 @@
       bottom: 0;
       margin-bottom: 0;
     }
+  }
+
+  /* Transactions filter bar (Figma Make .ledger-filter-bar): four boxes on the page background */
+  .filter-bar {
+    @apply mb-3.5 grid grid-cols-2 gap-2.5 lg:grid-cols-[1.15fr_1fr_0.95fr_1.25fr];
+  }
+  .filter-box {
+    @apply relative flex h-11 min-w-0 items-center gap-2.5 rounded-control border border-border bg-surface px-3.5 text-control text-ink focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-forest;
+  }
+  .filter-box select {
+    @apply h-full min-w-0 flex-1 cursor-pointer appearance-none bg-transparent pr-1 text-control text-secondary outline-none;
+  }
+  .filter-box input {
+    @apply h-full min-w-0 flex-1 bg-transparent text-control text-ink outline-none placeholder:text-placeholder;
+  }
+  /* Styled dropdowns over form selects (enhanceSelect in static/js/app.js) */
+  .select-wrap {
+    @apply relative;
+  }
+  .select-trigger {
+    @apply flex cursor-pointer items-center justify-between gap-2 text-left disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .select-chevron {
+    @apply shrink-0 text-muted transition-transform;
+  }
+  .select-wrap.is-open .select-trigger {
+    @apply border-forest;
+  }
+  .select-wrap.is-open .select-chevron {
+    @apply rotate-180;
+  }
+  .select-wrap .select-menu {
+    @apply z-[60] mt-0 min-w-0;
+  }
+  .field-invalid .select-trigger {
+    @apply border-clay;
+  }
+
+  /* Styled menu for the filter selects */
+  .select-menu {
+    @apply top-full left-0 mt-2 max-h-[340px] w-full min-w-[230px] overflow-y-auto p-1.5;
+  }
+  .select-menu-group {
+    @apply px-2.5 pt-2.5 pb-1 text-[11px] font-semibold tracking-[0.08em] text-muted uppercase;
+  }
+  .select-menu-item {
+    @apply flex w-full items-center gap-2.5 rounded-control px-2.5 py-2 text-left text-control text-ink transition-colors hover:bg-hover focus-visible:bg-hover focus-visible:outline-none;
+  }
+  .select-menu-item.is-selected {
+    @apply bg-forest-tint font-semibold text-forest;
+  }
+  .dot-sep {
+    @apply inline-block size-[3px] shrink-0 rounded-full bg-[#bec3b2];
+  }
+  /* In the filter bar the date popover opens from the left edge */
+  @media (min-width: 64rem) {
+    .period-popover.period-popover-left {
+      @apply right-auto left-0;
+    }
+  }
+
+  /* Transactions grouped by day (Figma Make "grouped ledger", transactions.css) */
+  .ledger-table {
+    @apply w-full min-w-[650px] table-fixed border-collapse text-left;
+  }
+  .ledger-table thead th {
+    @apply border-y border-border bg-surface px-4 py-3 text-caption font-medium text-muted md:px-6;
+  }
+  .ledger-day > th {
+    @apply border-y border-[#e9ece1] bg-[#f5f6ef] px-4 py-2.5 text-caption font-normal text-[#8a917c] md:px-6;
+  }
+  .ledger-day-inner {
+    @apply flex flex-wrap items-center justify-between gap-x-4 gap-y-1;
+  }
+  .ledger-day-count {
+    @apply border-l border-[#dce2d1] pl-2.5 text-[11px] text-[#a0a690];
+  }
+  .ledger-row {
+    @apply transition-colors hover:bg-[#fcfdf8];
+  }
+  .ledger-row > td {
+    @apply border-b border-[#f0f0e9] px-4 py-3 md:px-6;
+  }
+  .ledger-row:last-child > td {
+    @apply border-b-0;
+  }
+  .ledger-merchant {
+    @apply flex min-w-0 items-center gap-3;
+  }
+  .ledger-merchant strong {
+    @apply block truncate text-control font-semibold text-ink;
+  }
+  .ledger-merchant strong + span {
+    @apply mt-0.5 block truncate text-caption text-muted;
+  }
+  .ledger-icon {
+    @apply grid size-8 shrink-0 place-items-center rounded-[7px] border border-[#eeede6] bg-[#f8f7f2] text-[#8a8370];
+  }
+  .ledger-icon.is-green {
+    @apply border-forest-soft bg-forest-tint text-forest;
+  }
+  .ledger-wallet {
+    @apply inline-flex items-center gap-1.5 text-control whitespace-nowrap text-secondary;
+  }
+  .ledger-amount {
+    @apply text-right text-body font-medium whitespace-nowrap tabular-nums;
   }
 
   /* Toast */

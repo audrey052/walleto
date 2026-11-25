@@ -1,0 +1,21 @@
+{% load icons %}
+{# The styled menu for a native <select x-ref="select"> inside x-data="selectMenu" (see static/js/app.js). #}
+<button type="button" x-cloak x-show="ready" @click="toggle()" class="flex h-full min-w-0 flex-1 items-center gap-2 text-left text-control text-ink outline-none"
+        aria-haspopup="listbox" :aria-expanded="open" :aria-label="'{{ menu_label }}: ' + current.label">
+  <span class="truncate" :class="current.value ? 'text-ink' : 'text-secondary'" x-text="current.label"></span>
+</button>
+<span class="pointer-events-none text-muted transition-transform" :class="open && 'rotate-180'">{% icon "chevron-down" size=14 %}</span>
+<div x-cloak x-show="open" x-transition.opacity.duration.100ms class="select-menu popover" role="listbox" aria-label="{{ menu_label }}">
+  <template x-for="group in groups" :key="group.key">
+    <div>
+      <p x-show="group.label" class="select-menu-group" x-text="group.label"></p>
+      <template x-for="item in group.items" :key="item.value">
+        <button type="button" role="option" class="select-menu-item" :class="item.value === current.value && 'is-selected'"
+                :aria-selected="item.value === current.value" @click="choose(item)">
+          <span class="flex-1 truncate" x-text="item.label"></span>
+          <span x-show="item.value === current.value" class="text-forest">{% icon "check" size=14 %}</span>
+        </button>
+      </template>
+    </div>
+  </template>
+</div>

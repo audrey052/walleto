@@ -152,17 +152,29 @@ class TransactionsPageTests(ActivityTestCase):
             with self.subTest(month=bad):
                 self.assertEqual(self.client.get(self.url, {"month": bad}).context["period"].month, (2026, 11))
 
-    def test_table_rows_with_date_column_and_transfer_row(self):
+    def test_rows_grouped_by_day_with_transfer_row(self):
         self.tx("GoFood", 67_500)
         self.tx("Grab", 32_000, "Transport")
         self.transfer(200_000, day=date(2026, 11, 14))
+        self.tx("Salary", 5_000_000, "Salary", self.bca, date(2026, 11, 12))
+        self.transfer(100_000, day=date(2026, 11, 10))
         response = self.client.get(self.url)
-        self.assertEqual(len(response.context["entries"]), 3)
-        self.assertEqual(response.context["summary"]["expense"], 99_500)  # transfer excluded
-        self.assertContains(response, "<th scope=\"col\" class=\"px-5 py-2.5 font-medium\">Date</th>", html=False)
+        self.assertEqual(len(response.context["entries"]), 5)
+        self.assertEqual(response.context["summary"]["expense"], 99_500)  # transfers excluded
+        # No Date column: each day has its own header, newest first.
+        self.assertNotContains(response, '<th scope="col">Date</th>', html=False)
+        groups = response.context["day_groups"]
+        self.assertEqual([g["date"] for g in groups], [date(2026, 11, 14), date(2026, 11, 12), date(2026, 11, 10)])
+        self.assertEqual((groups[0]["count"], groups[0]["expense"], groups[0]["income"]), (3, 99_500, 0))
         self.assertContains(response, "14 Nov 2026")
+        self.assertContains(response, "Saturday")
+        self.assertContains(response, "Daily expenses")
+        self.assertContains(response, "Daily income")
+        self.assertContains(response, "No income or expenses")  # 10 Nov: only a transfer
+        self.assertNotContains(response, "Wallet transfers are not counted as expenses.")  # removed
+        self.assertNotContains(response, "transactions shown")
         self.assertContains(response, "BCA → GoPay")
-        self.assertContains(response, "3 transactions in November 2026")
+        self.assertContains(response, '5 transactions <i class="dot-sep"></i> November 2026', html=False)
         self.assertContains(response, "Expenses")
         self.assertNotContains(response, "Monthly expenses")
         self.assertNotContains(response, ">Net")
@@ -234,6 +246,10 @@ class TransactionsPageTests(ActivityTestCase):
         self.assertEqual(len(second.context["entries"]), 10)
         self.assertEqual(second.context["summary"]["expense"], 60_000)  # summary covers the whole month
         self.assertIn("page=2", first.context["page_next_url"])
+        # A day split across pages shows the whole day's count and total on both pages.
+        for page in (first, second):
+            day = page.context["day_groups"][0]
+            self.assertEqual((day["count"], day["expense"]), (60, 60_000))
 
     def test_only_own_transactions_listed(self):
         other = make_user("sari@example.com", "Sari")
@@ -442,7 +458,7 @@ class TransactionsRangeTests(ActivityTestCase):
         response = self.client.get(self.url, self.RANGE)
         self.assertEqual([e.description for e, _ in response.context["entries"]], ["End", "Salary", "Start"])
         self.assertContains(response, "10 Nov – 16 Nov 2026")
-        self.assertContains(response, "3 transactions in 10 Nov – 16 Nov 2026")
+        self.assertContains(response, '3 transactions <i class="dot-sep"></i> 10 Nov – 16 Nov 2026', html=False)
 
     def test_range_summary(self):
         summary = self.client.get(self.url, self.RANGE).context["summary"]

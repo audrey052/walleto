@@ -12,10 +12,8 @@
       <h1>Transactions</h1>
       <p class="mt-1.5 text-body text-secondary">{{ active_section.subtitle }}</p>
     </div>
-    {# The date button and "Add transaction" share one width (equal grid columns). #}
-    <div class="grid w-fit auto-cols-fr items-center gap-2.5 sm:grid-flow-col">
-      {% url 'finance:transactions' as period_action %}
-      {% include "components/period_picker.html" with picker_width="w-full" %}
+    <div class="flex flex-wrap items-center gap-2.5">
+      <a href="{{ export_url }}" id="export-link" class="btn" download>{% icon "download" size=15 %} Export CSV</a>
       {# Hidden while the empty state below shows its own "Add transaction", so there is only one. #}
       {% if entries or has_filters or not has_wallets %}
         <a href="{% url 'finance:transaction_create' %}" class="btn btn-primary"
@@ -26,156 +24,185 @@
     </div>
   </div>
 
-  <section class="panel">
-    {# Toolbar: a plain GET form upgraded with HTMX (design decision 5) #}
-    <form method="get" action="{% url 'finance:transactions' %}" role="search"
-          class="flex flex-wrap items-center gap-2.5 px-4 pt-5 pb-5 md:flex-nowrap md:gap-3 md:px-6"
+  {% comment %}Filter bar after the Figma Make ledger (.ledger-filter-bar): dates, category, wallet, search. The filter
+     form uses display: contents so its fields sit in the same grid as the date picker, which has its own form.{% endcomment %}
+  <div class="filter-bar">
+    {% url 'finance:transactions' as period_action %}
+    {% include "components/period_picker.html" with picker_variant="bar" picker_width="w-full" %}
+    <form method="get" action="{% url 'finance:transactions' %}" role="search" class="contents"
           hx-get="{% url 'finance:transactions' %}" hx-target="#results" hx-select="#results" hx-swap="outerHTML"
           hx-push-url="true" hx-trigger="change, input changed delay:300ms from:find input[name=q]">
       {% for name, value in period.query.items %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
-      <label class="flex h-9 w-full items-center gap-2.5 rounded-control border border-border bg-surface px-3 text-muted focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-forest md:max-w-[340px] md:flex-1">
-        {% icon "search" size=17 %}
+      {# Category and wallet: native selects (they hold the value and work without JavaScript), shown as styled menus by `selectMenu`. #}
+      <div class="filter-box" x-data="selectMenu" @keydown.escape="close()" @click.outside="close()">
+        <span class="text-muted">{% icon "budget" size=17 %}</span>
+        <select name="category" aria-label="Filter by category" x-ref="select" :class="ready && 'sr-only'" :tabindex="ready ? -1 : 0">
+          <option value="">All categories</option>
+          <optgroup label="Expense">
+            {% for c in category_options %}{% if c.kind == "expense" %}<option value="{{ c.pk }}" {% if selected_category.pk == c.pk %}selected{% endif %}>{{ c.name }}</option>{% endif %}{% endfor %}
+          </optgroup>
+          <optgroup label="Income">
+            {% for c in category_options %}{% if c.kind == "income" %}<option value="{{ c.pk }}" {% if selected_category.pk == c.pk %}selected{% endif %}>{{ c.name }}</option>{% endif %}{% endfor %}
+          </optgroup>
+        </select>
+        {% include "finance/_select_menu.html" with menu_label="Category" %}
+      </div>
+      <div class="filter-box" x-data="selectMenu" @keydown.escape="close()" @click.outside="close()">
+        <span class="text-muted">{% icon "wallet" size=17 %}</span>
+        <select name="wallet" aria-label="Filter by wallet" x-ref="select" :class="ready && 'sr-only'" :tabindex="ready ? -1 : 0">
+          <option value="">All wallets</option>
+          {% for w in wallet_options %}
+            <option value="{{ w.pk }}" {% if selected_wallet.pk == w.pk %}selected{% endif %}>{{ w.name }}{% if w.is_archived %} (archived){% endif %}</option>
+          {% endfor %}
+        </select>
+        {% include "finance/_select_menu.html" with menu_label="Wallet" %}
+      </div>
+      <label class="filter-box filter-search">
+        <span class="text-muted">{% icon "search" size=17 %}</span>
         <input type="search" name="q" value="{{ query }}" placeholder="Search transactions…"
-               aria-label="Search transactions" autocomplete="off"
-               class="h-full w-full bg-transparent text-control text-ink outline-none placeholder:text-placeholder">
+               aria-label="Search transactions" autocomplete="off">
       </label>
-      <select name="wallet" aria-label="Filter by wallet"
-              class="h-9 flex-1 rounded-control border border-border bg-surface px-3 text-control text-secondary md:ml-auto md:flex-none">
-        <option value="">All wallets</option>
-        {% for w in wallet_options %}
-          <option value="{{ w.pk }}" {% if selected_wallet.pk == w.pk %}selected{% endif %}>{{ w.name }}{% if w.is_archived %} (archived){% endif %}</option>
-        {% endfor %}
-      </select>
-      <select name="category" aria-label="Filter by category"
-              class="h-9 flex-1 rounded-control border border-border bg-surface px-3 text-control text-secondary md:flex-none">
-        <option value="">All categories</option>
-        <optgroup label="Expense">
-          {% for c in category_options %}{% if c.kind == "expense" %}<option value="{{ c.pk }}" {% if selected_category.pk == c.pk %}selected{% endif %}>{{ c.name }}</option>{% endif %}{% endfor %}
-        </optgroup>
-        <optgroup label="Income">
-          {% for c in category_options %}{% if c.kind == "income" %}<option value="{{ c.pk }}" {% if selected_category.pk == c.pk %}selected{% endif %}>{{ c.name }}</option>{% endif %}{% endfor %}
-        </optgroup>
-      </select>
       <noscript><button type="submit" class="btn">Apply</button></noscript>
-      <a href="{{ export_url }}" id="export-link" class="btn shrink-0" download>
-        {% icon "download" size=15 %} Export CSV
-      </a>
     </form>
+  </div>
 
     <div id="results">
       {# Export follows the current filters; keep the toolbar link in sync after HTMX swaps #}
       <div hidden x-data x-init="document.getElementById('export-link')?.setAttribute('href', '{{ export_url|escapejs }}')"></div>
 
-      {# Summary line (transfers excluded from income and expenses) #}
-      <div class="flex flex-col gap-2 px-4 pb-5 text-control text-muted sm:flex-row sm:items-center sm:justify-between md:px-6">
-        <span>
-          {{ entry_count }} transaction{{ entry_count|pluralize }} in {{ period.label }}
-          {% if has_filters %}· <a href="{{ clear_url }}" class="btn-text">Clear filters</a>{% endif %}
+      {# Summary line under the filter bar (transfers excluded from income and expenses) #}
+      <div class="mb-4 flex flex-col gap-2 px-0.5 text-control text-muted sm:flex-row sm:items-center sm:justify-between">
+        <span class="flex flex-wrap items-center gap-2">
+          {{ entry_count }} transaction{{ entry_count|pluralize }} <i class="dot-sep"></i> {{ period.label }}
+          {% if has_filters %}<a href="{{ clear_url }}" class="btn-text ml-1">Clear filters</a>{% endif %}
         </span>
-        <span class="flex flex-wrap gap-x-5 gap-y-1">
-          <span>Income <strong class="ml-1.5 font-medium text-forest">{% amount summary.income kind="income" %}</strong></span>
-          <span>Expenses <strong class="ml-1.5 font-medium text-ink">{% amount summary.expense %}</strong></span>
+        <span class="flex flex-wrap items-center gap-2">
+          Income <strong class="font-semibold text-forest">{% amount summary.income kind="income" %}</strong>
+          <i class="dot-sep"></i>
+          Expenses <strong class="font-semibold text-ink">{% amount summary.expense %}</strong>
         </span>
       </div>
 
+      <section class="panel">
       {% if entries %}
+        {# Grouped by day, after the Figma Make "grouped ledger" (TransactionsPage.tsx, transactions.css). #}
         <div class="overflow-x-auto">
-          <table class="w-full min-w-[680px] border-collapse text-left whitespace-nowrap">
+          <table class="ledger-table">
+            <caption class="sr-only">Transactions for {{ period.label }}, grouped by day</caption>
+            <colgroup>
+              <col class="w-[39%]"><col class="w-[24%]"><col class="w-[19%]"><col class="w-[18%]">
+            </colgroup>
             <thead>
-              <tr class="border-y border-border bg-paper text-caption font-medium text-muted">
-                <th scope="col" class="w-[34%] py-2.5 pr-5 pl-4 font-medium md:pl-6">Transaction</th>
-                <th scope="col" class="px-5 py-2.5 font-medium">Category</th>
-                <th scope="col" class="px-5 py-2.5 font-medium">Wallet</th>
-                <th scope="col" class="px-5 py-2.5 font-medium">Date</th>
-                <th scope="col" class="py-2.5 pr-4 pl-5 text-right font-medium md:pr-6">Amount</th>
+              <tr>
+                <th scope="col">Description</th>
+                <th scope="col">Category</th>
+                <th scope="col">Wallet</th>
+                <th scope="col" class="text-right">Amount</th>
               </tr>
             </thead>
-            <tbody>
-              {% for entry, type in entries %}
-                {% if type == "goal" %}
-                  {# Goal deposit or withdrawal (transactions spec, "Goal movements in the Transactions list"). #}
-                  {% if not entry.goal.deleted_at %}{% url 'finance:goal_detail' entry.goal_id as goal_url %}{% endif %}
-                  <tr class="border-b border-[#f0efe9] transition-colors last:border-b-0 {% if goal_url %}cursor-pointer hover:bg-[#fdfdfa]{% endif %}"
-                      {% if goal_url %}onclick="window.location = '{{ goal_url }}'"{% endif %}>
-                    <td class="py-3 pr-5 pl-4 md:pl-6">
-                      {% if goal_url %}<a href="{{ goal_url }}" class="flex items-center gap-3">{% else %}<span class="flex items-center gap-3">{% endif %}
-                        <span class="grid size-8 shrink-0 place-items-center rounded-[7px] border border-[#eeede6] bg-[#f8f7f2] text-[#8a8370]">{% icon "goal" size=17 %}</span>
-                        <span class="min-w-0">
-                          <strong class="block truncate text-control font-semibold">{{ entry.route }}</strong>
-                          <span class="block truncate text-caption text-muted">{{ entry.note|default:entry.get_kind_display }}</span>
-                        </span>
-                      {% if goal_url %}</a>{% else %}</span>{% endif %}
-                    </td>
-                    <td class="px-5 py-3"><span class="chip" style="--chip: #688373">Savings goal</span></td>
-                    <td class="px-5 py-3">
-                      <span class="inline-flex items-center gap-1.5 text-control text-secondary">
-                        <i class="size-[5px] rounded-[2px] opacity-80" style="background: {{ entry.wallet.color }}"></i>{{ entry.wallet.name }}
+            {% for day in day_groups %}
+              <tbody>
+                <tr class="ledger-day">
+                  <th colspan="4" scope="rowgroup">
+                    <span class="ledger-day-inner">
+                      <span class="flex items-center gap-2.5">
+                        <span class="font-semibold text-[#4f5f43]">{{ day.date|date:"j M Y" }}</span>
+                        <small class="text-muted">{{ day.date|date:"l" }}</small>
+                        <span class="ledger-day-count">{{ day.count }} transaction{{ day.count|pluralize }}</span>
                       </span>
-                    </td>
-                    <td class="px-5 py-3 text-control text-muted">{{ entry.date|date:"j M Y" }}</td>
-                    <td class="py-3 pr-4 pl-5 text-right text-body font-medium md:pr-6"><span class="text-secondary">{% amount entry.amount %}</span></td>
-                  </tr>
-                {% else %}
-                {% if type == "transaction" %}
-                  {% url 'finance:transaction_edit' entry.pk as edit_url %}
-                {% else %}
-                  {% url 'finance:transfer_edit' entry.pk as edit_url %}
-                {% endif %}
-                <tr class="cursor-pointer border-b border-[#f0efe9] transition-colors last:border-b-0 hover:bg-[#fdfdfa]"
-                    hx-get="{{ edit_url }}?next={{ current_url|urlencode }}" hx-target="#modal-root">
-                  <td class="py-3 pr-5 pl-4 md:pl-6">
-                    {# The row opens the modal; the link is the no-JavaScript fallback, so it doesn't navigate when JS runs. #}
-                    <a href="{{ edit_url }}?next={{ current_url|urlencode }}" class="flex items-center gap-3" onclick="event.preventDefault()">
-                      <span class="grid size-8 shrink-0 place-items-center rounded-[7px] border border-[#eeede6] bg-[#f8f7f2] text-[#8a8370]">
-                        {% if type == "transfer" %}{% icon "transactions" size=17 %}{% elif entry.is_income %}{% icon "arrow-down" size=17 %}{% else %}{% icon entry.category.icon size=17 %}{% endif %}
-                      </span>
-                      <span class="min-w-0">
-                        {% if type == "transfer" %}
-                          <strong class="block truncate text-control font-semibold">{{ entry.from_wallet.name }} → {{ entry.to_wallet.name }}</strong>
-                          <span class="block truncate text-caption text-muted">{{ entry.note|default:"Transfer between wallets" }}</span>
+                      <span class="flex items-center gap-2.5" data-day-total>
+                        {% if day.expense %}
+                          <span>Daily expenses <strong class="ml-1 font-semibold text-[#5d6852] tabular-nums">{{ day.expense|rupiah }}</strong></span>
+                          {% if day.income %}<span class="border-l border-border pl-2.5 text-forest">Income +{{ day.income|rupiah }}</span>{% endif %}
+                        {% elif day.income %}
+                          <span>Daily income <strong class="ml-1 font-semibold text-forest tabular-nums">+{{ day.income|rupiah }}</strong></span>
                         {% else %}
-                          <strong class="block truncate text-control font-semibold">{{ entry.description }}{% if entry.source == "ai" %} <span class="ml-1 rounded-chip bg-forest-tint px-1.5 py-0.5 align-middle text-[10px] font-medium text-forest" title="Recorded by the assistant" data-ai>AI</span>{% endif %}</strong>
-                          {% if entry.note %}<span class="block truncate text-caption text-muted">{{ entry.note }}</span>{% endif %}
+                          <span>No income or expenses</span>
                         {% endif %}
                       </span>
-                    </a>
-                  </td>
-                  <td class="px-5 py-3">
-                    {% if type == "transfer" %}
-                      <span class="chip" style="--chip: #92918A">Transfer</span>
-                    {% else %}
-                      {% include "components/category_chip.html" with name=entry.category.name color=entry.category.color %}
-                    {% endif %}
-                  </td>
-                  <td class="px-5 py-3">
-                    {% if type == "transfer" %}
-                      <span class="inline-flex items-center gap-1.5 text-control text-secondary">
-                        <i class="size-[5px] rounded-[2px] opacity-80" style="background: {{ entry.from_wallet.color }}"></i>{{ entry.from_wallet.name }}
-                        <span class="text-muted">→</span>
-                        <i class="size-[5px] rounded-[2px] opacity-80" style="background: {{ entry.to_wallet.color }}"></i>{{ entry.to_wallet.name }}
-                      </span>
-                    {% else %}
-                      <span class="inline-flex items-center gap-1.5 text-control text-secondary">
-                        <i class="size-[5px] rounded-[2px] opacity-80" style="background: {{ entry.wallet.color }}"></i>{{ entry.wallet.name }}
-                      </span>
-                    {% endif %}
-                  </td>
-                  <td class="px-5 py-3 text-control text-muted">{{ entry.date|date:"j M Y" }}</td>
-                  <td class="py-3 pr-4 pl-5 text-right text-body font-medium md:pr-6">
-                    {% if type == "transfer" %}
-                      <span class="text-secondary">{% amount entry.amount %}</span>
-                    {% elif entry.is_income %}
-                      {% amount entry.amount kind="income" %}
-                    {% else %}
-                      {% amount entry.amount kind="expense" %}
-                    {% endif %}
-                  </td>
+                    </span>
+                  </th>
                 </tr>
-                {% endif %}
-              {% endfor %}
-            </tbody>
+                {% for entry, type in day.entries %}
+                  {% if type == "goal" %}
+                    {# Goal deposit or withdrawal (transactions spec, "Goal movements in the Transactions list"). #}
+                    {% if not entry.goal.deleted_at %}{% url 'finance:goal_detail' entry.goal_id as goal_url %}{% endif %}
+                    <tr class="ledger-row {% if goal_url %}cursor-pointer{% endif %}"
+                        {% if goal_url %}onclick="window.location = '{{ goal_url }}'"{% endif %}>
+                      <td>
+                        {% if goal_url %}<a href="{{ goal_url }}" class="ledger-merchant">{% else %}<span class="ledger-merchant">{% endif %}
+                          <span class="ledger-icon">{% icon "goal" size=16 %}</span>
+                          <span class="min-w-0">
+                            <strong>{{ entry.route }}</strong>
+                            <span>{{ entry.note|default:entry.get_kind_display }}</span>
+                          </span>
+                        {% if goal_url %}</a>{% else %}</span>{% endif %}
+                      </td>
+                      <td><span class="chip" style="--chip: #688373">Savings goal</span></td>
+                      <td>
+                        <span class="ledger-wallet">{{ entry.wallet.name }}</span>
+                      </td>
+                      <td class="ledger-amount"><span class="text-secondary">{% amount entry.amount %}</span></td>
+                    </tr>
+                  {% else %}
+                    {% if type == "transaction" %}
+                      {% url 'finance:transaction_edit' entry.pk as edit_url %}
+                    {% else %}
+                      {% url 'finance:transfer_edit' entry.pk as edit_url %}
+                    {% endif %}
+                    <tr class="ledger-row cursor-pointer" hx-get="{{ edit_url }}?next={{ current_url|urlencode }}" hx-target="#modal-root">
+                      <td>
+                        {# The row opens the modal; the link is the no-JavaScript fallback, so it doesn't navigate when JS runs. #}
+                        <a href="{{ edit_url }}?next={{ current_url|urlencode }}" class="ledger-merchant" onclick="event.preventDefault()">
+                          <span class="ledger-icon {% if type == 'transfer' or entry.is_income %}is-green{% endif %}">
+                            {% if type == "transfer" %}{% icon "transactions" size=16 %}{% elif entry.is_income %}{% icon "arrow-down" size=16 %}{% else %}{% icon entry.category.icon size=16 %}{% endif %}
+                          </span>
+                          <span class="min-w-0">
+                            {% if type == "transfer" %}
+                              <strong>{{ entry.from_wallet.name }} → {{ entry.to_wallet.name }}</strong>
+                              <span>{{ entry.note|default:"Transfer between wallets" }}</span>
+                            {% else %}
+                              <strong>{{ entry.description }}{% if entry.source == "ai" %} <span class="ml-1 rounded-chip bg-forest-tint px-1.5 py-0.5 align-middle text-[10px] font-medium text-forest" title="Recorded by the assistant" data-ai>AI</span>{% endif %}</strong>
+                              {% if entry.note %}<span>{{ entry.note }}</span>{% endif %}
+                            {% endif %}
+                          </span>
+                        </a>
+                      </td>
+                      <td>
+                        {% if type == "transfer" %}
+                          <span class="chip" style="--chip: #92918A">Transfer</span>
+                        {% else %}
+                          {% include "components/category_chip.html" with name=entry.category.name color=entry.category.color %}
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% if type == "transfer" %}
+                          <span class="ledger-wallet">
+                            {{ entry.from_wallet.name }}
+                            <span class="text-muted">→</span>
+                            {{ entry.to_wallet.name }}
+                          </span>
+                        {% else %}
+                          <span class="ledger-wallet">{{ entry.wallet.name }}</span>
+                        {% endif %}
+                      </td>
+                      <td class="ledger-amount">
+                        {% if type == "transfer" %}
+                          <span class="text-secondary">{% amount entry.amount %}</span>
+                        {% elif entry.is_income %}
+                          {% amount entry.amount kind="income" %}
+                        {% else %}
+                          {% amount entry.amount kind="expense" %}
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endif %}
+                {% endfor %}
+              </tbody>
+            {% endfor %}
           </table>
         </div>
+
 
         {% if page.paginator.num_pages > 1 %}
           <nav class="flex items-center justify-between gap-3 border-t border-border px-4 py-3 md:px-6" aria-label="Pages">
@@ -211,8 +238,8 @@
              hx-get="{% url 'finance:transaction_create' %}" hx-target="#modal-root">{% icon "plus" size=16 %} Add transaction</a>
         </div>
       {% endif %}
+      </section>
     </div>
-  </section>
 
   <div id="modal-root"></div>
   </div>

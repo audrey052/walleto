@@ -77,6 +77,9 @@ document.addEventListener("alpine:init", () => {
       const from = field(this.$root, "from_wallet");
       const to = field(this.$root, "to_wallet");
       [from.value, to.value] = [to.value, from.value];
+      // Let the styled menus (enhanceSelect) show the swapped values.
+      from.dispatchEvent(new Event("change", { bubbles: true }));
+      to.dispatchEvent(new Event("change", { bubbles: true }));
       this.sync();
     },
     get source() {
@@ -264,6 +267,46 @@ document.addEventListener("alpine:init", () => {
     },
   }));
 
+  // A styled menu over a native <select> (Transactions filters). The select keeps the value and
+  // the form's change event, so HTMX filtering and the no-JavaScript form are unchanged.
+  Alpine.data("selectMenu", () => ({
+    ready: false,
+    open: false,
+    groups: [],
+    current: { value: "", label: "", color: "" },
+    init() {
+      const select = this.$refs.select;
+      const item = (option) => ({ value: option.value, label: option.textContent.trim(), color: option.dataset.color || "" });
+      const groups = [{ key: "top", label: "", items: [] }];
+      for (const child of select.children) {
+        if (child.tagName === "OPTGROUP") {
+          groups.push({ key: child.label, label: child.label, items: [...child.children].map(item) });
+        } else {
+          groups[0].items.push(item(child));
+        }
+      }
+      this.groups = groups.filter((g) => g.items.length);
+      const selected = select.selectedOptions[0];
+      this.current = selected ? item(selected) : this.groups[0].items[0];
+      this.ready = true;
+    },
+    toggle() {
+      this.open = !this.open;
+    },
+    close() {
+      this.open = false;
+    },
+    choose(item) {
+      this.current = item;
+      this.open = false;
+      const select = this.$refs.select;
+      if (select.value !== item.value) {
+        select.value = item.value;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    },
+  }));
+
   // Toast that closes itself after about four seconds.
   Alpine.data("toast", () => ({
     visible: true,
@@ -343,3 +386,175 @@ window.walletoChat = {
     form.querySelector("textarea")?.focus();
   },
 };
+
+// Styled dropdowns for every form <select class="input"> (modals, form pages, the style guide).
+// The native select stays in the form, hidden, and keeps the value, the label link, validation and
+// the change event; this only draws a button and a menu over it. Without JavaScript nothing changes.
+(function () {
+  const CHEVRON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+  const CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>';
+
+  function closeAll(except) {
+    document.querySelectorAll(".select-wrap.is-open").forEach((wrap) => {
+      if (wrap !== except) wrap._close(false);
+    });
+  }
+
+  function enhance(select) {
+    if (select.dataset.enhanced || select.multiple || select.hasAttribute("x-ref")) return;
+    select.dataset.enhanced = "1";
+
+    const wrap = document.createElement("div");
+    wrap.className = "select-wrap";
+    select.parentNode.insertBefore(wrap, select);
+    wrap.appendChild(select);
+    select.classList.add("sr-only");
+    select.tabIndex = -1;
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "input select-trigger";
+    button.setAttribute("aria-haspopup", "listbox");
+    button.setAttribute("aria-expanded", "false");
+    const label = document.createElement("span");
+    label.className = "truncate";
+    button.append(label);
+    button.insertAdjacentHTML("beforeend", '<span class="select-chevron">' + CHEVRON + "</span>");
+    const menu = document.createElement("div");
+    menu.className = "select-menu popover";
+    menu.setAttribute("role", "listbox");
+    menu.hidden = true;
+    wrap.append(button, menu);
+
+    const fieldLabel = select.id ? document.querySelector('label[for="' + select.id + '"]') : null;
+    const name = fieldLabel ? fieldLabel.textContent.trim() : "";
+    if (name) menu.setAttribute("aria-label", name);
+
+    function render() {
+      menu.innerHTML = "";
+      const addOption = (option) => {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "select-menu-item";
+        item.setAttribute("role", "option");
+        item.disabled = option.disabled;
+        const selected = option.value === select.value;
+        item.setAttribute("aria-selected", String(selected));
+        if (selected) item.classList.add("is-selected");
+        const text = document.createElement("span");
+        text.className = "flex-1 truncate";
+        text.textContent = option.textContent.trim();
+        item.append(text);
+        if (selected) item.insertAdjacentHTML("beforeend", '<span class="text-forest">' + CHECK + "</span>");
+        item.addEventListener("click", () => choose(option.value));
+        menu.append(item);
+      };
+      for (const child of select.children) {
+        if (child.tagName === "OPTGROUP") {
+          const heading = document.createElement("p");
+          heading.className = "select-menu-group";
+          heading.textContent = child.label;
+          menu.append(heading);
+          [...child.children].forEach(addOption);
+        } else {
+          addOption(child);
+        }
+      }
+    }
+
+    function sync() {
+      const option = select.selectedOptions[0];
+      label.textContent = option ? option.textContent.trim() : "";
+      label.classList.toggle("text-placeholder", !option || option.value === "");
+      button.disabled = select.disabled;
+      button.setAttribute("aria-label", (name ? name + ": " : "") + label.textContent);
+    }
+
+    // Fixed to the screen so a scrolling modal cannot clip it; opens upward when there is no room below.
+    function place() {
+      const rect = button.getBoundingClientRect();
+      const below = window.innerHeight - rect.bottom - 8;
+      const above = rect.top - 8;
+      const height = Math.min(menu.scrollHeight, 300);
+      const up = below < Math.min(height, 200) && above > below;
+      menu.style.position = "fixed";
+      menu.style.left = rect.left + "px";
+      menu.style.width = rect.width + "px";
+      menu.style.maxHeight = Math.max(Math.min(300, up ? above : below), 120) + "px";
+      menu.style.top = up ? "" : rect.bottom + 4 + "px";
+      menu.style.bottom = up ? window.innerHeight - rect.top + 4 + "px" : "";
+    }
+
+    function open() {
+      closeAll(wrap);
+      render();
+      menu.hidden = false;
+      place();
+      wrap.classList.add("is-open");
+      button.setAttribute("aria-expanded", "true");
+      const target = menu.querySelector(".is-selected") || menu.querySelector(".select-menu-item:not(:disabled)");
+      if (target) target.focus();
+    }
+
+    wrap._close = (focusButton) => {
+      menu.hidden = true;
+      wrap.classList.remove("is-open");
+      button.setAttribute("aria-expanded", "false");
+      if (focusButton) button.focus();
+    };
+
+    function choose(value) {
+      wrap._close(true);
+      if (select.value !== value) {
+        select.value = value;
+        select.dispatchEvent(new Event("input", { bubbles: true }));
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      sync();
+    }
+
+    button.addEventListener("click", () => (wrap.classList.contains("is-open") ? wrap._close(false) : open()));
+    button.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        open();
+      }
+    });
+    menu.addEventListener("keydown", (event) => {
+      const items = [...menu.querySelectorAll(".select-menu-item:not(:disabled)")];
+      const index = items.indexOf(document.activeElement);
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        const next = event.key === "ArrowDown" ? Math.min(index + 1, items.length - 1) : Math.max(index - 1, 0);
+        if (items[next]) items[next].focus();
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation(); // keep a surrounding modal open
+        wrap._close(true);
+      } else if (event.key === "Tab") {
+        wrap._close(false);
+      }
+    });
+    // The field label points at the hidden select: send its focus to the button.
+    select.addEventListener("focus", () => button.focus());
+    select.addEventListener("change", sync);
+    sync();
+  }
+
+  function enhanceAll(root) {
+    const scope = root && root.querySelectorAll ? root : document;
+    if (scope.matches && scope.matches("select.input")) enhance(scope);
+    scope.querySelectorAll("select.input").forEach(enhance);
+  }
+
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest(".select-wrap")) closeAll(null);
+  });
+  // A fixed menu would float away from its field: close it when anything scrolls or resizes.
+  window.addEventListener("resize", () => closeAll(null));
+  document.addEventListener("scroll", (event) => {
+    if (!(event.target.closest && event.target.closest(".select-menu"))) closeAll(null);
+  }, true);
+  document.addEventListener("DOMContentLoaded", () => enhanceAll(document));
+  document.addEventListener("htmx:load", (event) => enhanceAll(event.target));
+})();

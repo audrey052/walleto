@@ -55,15 +55,26 @@ Above the list, a summary line SHALL show how many entries the selected period h
 - **THEN** the summary shows Income +Rp0 and Expenses Rp1.200.000, and nothing dated before 18 November is counted
 
 ### Requirement: Transactions table
-The month's transactions and transfers SHALL be listed newest first in a table with the columns Transaction (description and note), Category, Wallet, Date and Amount. Choosing a row SHALL open it for editing. On narrow screens the table SHALL scroll sideways instead of squeezing its columns.
+The period's entries SHALL be listed newest first in a table with the columns Description (with the note), Category, Wallet and Amount. Choosing a row SHALL open it for editing. On narrow screens the table SHALL scroll sideways instead of squeezing its columns.
 
 #### Scenario: Table rows
 - **WHEN** 14 November has expenses GoFood Rp67.500 and Grab Rp32.000
-- **THEN** both appear as rows with their category, wallet, the date "14 Nov 2026" and −Rp67.500 and −Rp32.000, above any older rows
+- **THEN** both appear as rows with their category, wallet, −Rp67.500 and −Rp32.000, above any older rows
 
 #### Scenario: Phone width
 - **WHEN** the page is shown 390 pixels wide
 - **THEN** the table keeps its columns and can be scrolled sideways, and the page itself does not scroll sideways
+
+### Requirement: Grouped by day
+The table SHALL group entries by day. Each day SHALL start with a header showing the date, the weekday and the day's number of entries, and on the right the day's expenses, its income when it has no expenses, or "No income or expenses". A day split across pages SHALL show the whole day's figures on both pages.
+
+#### Scenario: Day header
+- **WHEN** 14 November has an expense of Rp67.500 and one of Rp32.000
+- **THEN** the day starts with "14 Nov 2026", "Saturday", "2 transactions" and "Daily expenses Rp99.500"
+
+#### Scenario: A day with only a transfer
+- **WHEN** 10 November has only a transfer from BCA to GoPay
+- **THEN** that day's header says "No income or expenses"
 
 ### Requirement: Filter and search
 On the Transactions page the user SHALL be able to filter by wallet and by category and search descriptions and notes (case-insensitive). Filters SHALL apply within the selected period, update the list and summary without reloading the page, and be reflected in the address together with the period. Filtering by category SHALL hide transfers; filtering by wallet SHALL keep transfers into or out of that wallet.

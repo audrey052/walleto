@@ -9,6 +9,54 @@
 <div class="relative {{ picker_width|default:'w-fit' }}" x-data="periodPicker"
      data-start="{{ period.start|date:'Y-m-d' }}" data-end="{{ period.end|date:'Y-m-d' }}" data-today="{{ today|date:'Y-m-d' }}"
      @keydown.escape="close()" @click.outside="close()">
+  {% if picker_variant == "bar" %}
+  {# Filter-bar look (Figma ledger month filter): calendar and label; no month arrows (developer, 2026-11-25). #}
+  <div class="filter-box w-full">
+    <details class="period-details min-w-0 flex-1 self-stretch" x-ref="details" @toggle="open = $el.open">
+      <summary class="flex h-full min-w-0 cursor-pointer list-none items-center gap-2.5 text-control font-medium whitespace-nowrap text-ink"
+               aria-label="Choose dates: {{ period.label }}" data-period-label>
+        <span class="text-muted">{% icon "calendar" size=17 %}</span><span class="truncate">{{ period.label }}</span>
+      </summary>
+      <div class="period-popover period-popover-left popover top-full mt-2" role="dialog" aria-label="Choose dates">
+        <div class="period-body">
+          {# Calendar, drawn by periodPicker once JavaScript runs #}
+          <div x-cloak x-show="ready" class="period-calendar">
+            <div class="mb-2 flex items-center justify-between">
+              <button type="button" class="btn-icon size-7" @click="step(-1)" aria-label="Earlier month">{% icon "chevron-left" size=15 %}</button>
+              <span class="text-control font-semibold" x-text="title"></span>
+              <button type="button" class="btn-icon size-7" @click="step(1)" :disabled="!canStepForward" aria-label="Later month">{% icon "chevron-right" size=15 %}</button>
+            </div>
+            <div class="period-grid text-[11px] text-muted" aria-hidden="true">
+              <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
+            </div>
+            <div class="period-grid mt-1" role="grid" @mouseleave="hover = null">
+              <template x-for="cell in cells" :key="cell.key">
+                <button type="button" class="period-day" :disabled="cell.disabled || !cell.iso"
+                        :class="dayClass(cell)" :aria-label="cell.label" :aria-pressed="isSelected(cell)"
+                        @click="pick(cell.iso)" @mouseenter="hover = cell.iso" x-text="cell.day"></button>
+              </template>
+            </div>
+            <p class="mt-2 h-4 text-caption text-muted" x-text="hint"></p>
+          </div>
+          {# Plain form: the no-JavaScript path, and what the calendar submits #}
+          <form method="get" action="{{ period_action }}" x-ref="form"
+                hx-get="{{ period_action }}" hx-target="{{ period_target }}" hx-select="{{ period_target }}" hx-swap="outerHTML" hx-push-url="true">
+            {% for name, value in period_fields.items %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+            <div :hidden="ready" class="flex flex-col gap-2.5">
+              <label class="flex flex-col gap-1 text-caption text-secondary">From
+                <input type="date" name="from" x-ref="from" value="{{ period.start|date:'Y-m-d' }}" max="{{ today|date:'Y-m-d' }}" class="h-9 rounded-control border border-border bg-surface px-2.5 text-control text-ink">
+              </label>
+              <label class="flex flex-col gap-1 text-caption text-secondary">To
+                <input type="date" name="to" x-ref="to" value="{{ period.end|date:'Y-m-d' }}" max="{{ today|date:'Y-m-d' }}" class="h-9 rounded-control border border-border bg-surface px-2.5 text-control text-ink">
+              </label>
+              <button type="submit" class="btn btn-primary mt-1">Apply</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </details>
+  </div>
+  {% else %}
   <div class="flex h-9 w-full items-center rounded-control border border-border bg-surface">
     <a href="{{ prev_url }}" class="mx-0.5 grid size-7 shrink-0 place-items-center rounded-chip text-secondary hover:bg-forest-tint hover:text-forest" aria-label="Previous month"
        hx-get="{{ prev_url }}" hx-target="{{ period_target }}" hx-select="{{ period_target }}" hx-swap="outerHTML" hx-push-url="true">{% icon "chevron-left" size=16 %}</a>
@@ -62,4 +110,5 @@
       <span class="mx-0.5 grid size-7 shrink-0 place-items-center text-secondary opacity-30" aria-hidden="true">{% icon "chevron-right" size=16 %}</span>
     {% endif %}
   </div>
+  {% endif %}
 </div>

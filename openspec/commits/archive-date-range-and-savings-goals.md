@@ -3,7 +3,7 @@
 **Created:** 2026-11-25
 **Last edited:** 2026-11-25
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `ec883a6` chore: archive add-date-range and add-savings-goals
 **Branch:** `main`, parent `4c057fa`
 **OpenSpec changes:** `add-date-range` and `add-savings-goals` (MVP 4), closing both
 **Trigger:** `/opsx:archive add-date-range`, then `/opsx:archive add-savings-goals`; the developer chose to sync both times, then asked to merge the two small commits into one.
