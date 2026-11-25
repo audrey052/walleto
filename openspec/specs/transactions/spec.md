@@ -29,7 +29,7 @@ A signed-in user SHALL be able to add a transaction with a description (1 to 80 
 - **THEN** only their active wallets can be chosen
 
 ### Requirement: One month at a time
-The Transactions page SHALL show one month at a time, the current month by default, with a month picker that moves to the previous and next month. It SHALL NOT move beyond the current month, and the selected month SHALL be part of the address.
+The Transactions page SHALL show one period at a time, the current month by default, chosen with the period picker (a whole month or a range of days up to today). The selected period SHALL be part of the address.
 
 #### Scenario: Previous month
 - **WHEN** a user selects the previous month
@@ -39,12 +39,20 @@ The Transactions page SHALL show one month at a time, the current month by defau
 - **WHEN** the current month is selected
 - **THEN** the month picker offers no next month
 
+#### Scenario: A range of days
+- **WHEN** a user picks 10 to 24 November
+- **THEN** the summary and list show only entries dated 10 to 24 November, and the address ends with `?from=2026-11-10&to=2026-11-24`
+
 ### Requirement: Month summary line
-Above the list, a summary line SHALL show how many entries the selected month has after filters, and the month's total income and total expenses, labelled "Income" and "Expenses". Transfers SHALL be counted as entries but excluded from income and expenses.
+Above the list, a summary line SHALL show how many entries the selected period has after filters, and the period's total income and total expenses, labelled "Income" and "Expenses". Transfers SHALL be counted as entries but excluded from income and expenses.
 
 #### Scenario: Month summary
 - **WHEN** November has income Rp12.500.000 and expenses Rp5.847.500, plus a transfer of Rp500.000
 - **THEN** the summary shows 3 or more entries, Income +Rp12.500.000 and Expenses Rp5.847.500
+
+#### Scenario: Range summary
+- **WHEN** the period is 18 to 24 November and those days have expenses of Rp1.200.000 and no income
+- **THEN** the summary shows Income +Rp0 and Expenses Rp1.200.000, and nothing dated before 18 November is counted
 
 ### Requirement: Transactions table
 The month's transactions and transfers SHALL be listed newest first in a table with the columns Transaction (description and note), Category, Wallet, Date and Amount. Choosing a row SHALL open it for editing. On narrow screens the table SHALL scroll sideways instead of squeezing its columns.
@@ -58,11 +66,11 @@ The month's transactions and transfers SHALL be listed newest first in a table w
 - **THEN** the table keeps its columns and can be scrolled sideways, and the page itself does not scroll sideways
 
 ### Requirement: Filter and search
-On the Transactions page the user SHALL be able to filter by wallet and by category and search descriptions and notes (case-insensitive). Filters SHALL apply within the selected month, update the list and summary without reloading the page, and be reflected in the address. Filtering by category SHALL hide transfers; filtering by wallet SHALL keep transfers into or out of that wallet.
+On the Transactions page the user SHALL be able to filter by wallet and by category and search descriptions and notes (case-insensitive). Filters SHALL apply within the selected period, update the list and summary without reloading the page, and be reflected in the address together with the period. Filtering by category SHALL hide transfers; filtering by wallet SHALL keep transfers into or out of that wallet.
 
 #### Scenario: Search
 - **WHEN** a user types "kopi" in the search box
-- **THEN** only this month's transactions whose description or note contains "kopi" (any case) are listed
+- **THEN** only the period's transactions whose description or note contains "kopi" (any case) are listed
 
 #### Scenario: Wallet filter includes its transfers
 - **WHEN** a user filters by GoPay
@@ -72,19 +80,27 @@ On the Transactions page the user SHALL be able to filter by wallet and by categ
 - **WHEN** no transaction matches the filters
 - **THEN** an empty state says there are no transactions here and offers to clear the filters
 
+#### Scenario: Filters keep the range
+- **WHEN** the period is 10 to 24 November and a user filters by GoPay
+- **THEN** the address keeps `from=2026-11-10&to=2026-11-24` and adds the wallet
+
 ### Requirement: Pagination
-The list SHALL show at most 50 entries per page with links to the other pages. The summary line SHALL always cover the whole month, not only the current page.
+The list SHALL show at most 50 entries per page with links to the other pages. The summary line SHALL always cover the whole period, not only the current page.
 
 #### Scenario: Long month
 - **WHEN** a month has 120 entries
 - **THEN** the list shows pages 1 to 3, page 2 starts where page 1 ended, and the summary still counts all 120
 
 ### Requirement: Export to CSV
-The Transactions page SHALL offer "Export CSV", which downloads every entry of the selected month that matches the current filters, across all pages, as a UTF-8 file named `walleto-transactions-YYYY-MM.csv` with the columns Date, Type, Description, Note, Category, Wallet and Amount.
+The Transactions page SHALL offer "Export CSV", which downloads every entry of the selected period that matches the current filters, across all pages, as a UTF-8 file with the columns Date, Type, Description, Note, Category, Wallet and Amount. The file SHALL be named `walleto-transactions-YYYY-MM.csv` for a whole month and `walleto-transactions-YYYY-MM-DD_YYYY-MM-DD.csv` for another range.
 
 #### Scenario: Export a filtered month
 - **WHEN** a user searching "kopi" in November chooses Export CSV
 - **THEN** the file contains every November entry matching "kopi", including those beyond the first page
+
+#### Scenario: Export a range
+- **WHEN** the period is 10 to 24 November and the user chooses Export CSV
+- **THEN** the file is named `walleto-transactions-2026-11-10_2026-11-24.csv` and holds only entries dated 10 to 24 November
 
 ### Requirement: CSV amounts and transfers
 In the export, expenses SHALL have negative amounts and income positive ones. A transfer SHALL appear with type "Transfer", "From → To" as both description and wallet, and an unsigned amount.
@@ -148,3 +164,21 @@ After a user adds or edits an expense, and its category has a limit for that mon
 #### Scenario: Editing moves an expense into another category
 - **WHEN** the user edits an expense so it moves into Shopping and Shopping goes from 80% to 95%
 - **THEN** the warning names Shopping
+
+### Requirement: Goal movements in the Transactions list
+Goal deposits and withdrawals SHALL be listed with the month's transactions and transfers as neutral rows. A deposit shows "<Wallet> → <Goal>", a withdrawal "<Goal> → <Wallet>", "Savings goal" in the Category column, the wallet, and the amount without a plus or minus sign. They SHALL count as entries in the summary but not as income or expenses. Choosing one SHALL open its goal's detail page, unless the goal was deleted.
+
+#### Scenario: Deposit in the list
+- **WHEN** Rp1.000.000 was added from BCA to "Bali trip" on 18 November
+- **THEN** the table shows a "BCA → Bali trip" row dated 18 Nov 2026 with Rp1.000.000 and category "Savings goal", and November's expenses do not include it
+
+#### Scenario: Filters
+- **WHEN** a user filters by BCA, then by the Food & drinks category
+- **THEN** the BCA filter keeps the "BCA → Bali trip" row and the category filter hides it
+
+### Requirement: Goal movements in the CSV export
+In the export, a goal deposit or withdrawal SHALL appear with type "Savings", the same "From → To" text as the list as its description, the wallet's name as its wallet, and an unsigned amount.
+
+#### Scenario: Export a deposit
+- **WHEN** November has a Rp1.000.000 deposit from BCA to "Bali trip" and the user exports November
+- **THEN** the file has a row with type "Savings", description "BCA → Bali trip", wallet "BCA" and amount 1000000

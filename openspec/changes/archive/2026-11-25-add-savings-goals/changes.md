@@ -2,7 +2,7 @@
 
 This is the implementation log for this change. It lists what was created or modified, and where the result differs from `proposal.md`, `design.md` and `tasks.md`. Per-commit detail is in `openspec/commits/`.
 
-- **Status:** implemented, not archived. Still open: the developer's real-browser check.
+- **Status:** archived on 2026-11-25. `savings-goals` became a new main spec; `demo-account`, `transactions` and `wallets` gained the delta's requirements, and the wallets page requirement was replaced.
 - **Date:** 2026-11-23
 - **Tests:** 310 passing in about 9 s; 74 new in `finance/tests/test_goals.py`.
 - **Validation:**

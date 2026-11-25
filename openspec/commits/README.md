@@ -47,7 +47,8 @@ One Markdown record per commit, describing what the commit built, why, which fil
 | 39 | `fc086f2` | [add-date-range.md](add-date-range.md) | 5 (Home), 2 (Transactions) |
 | 40 | `bd904d9` | [goal-no-on-track-label.md](goal-no-on-track-label.md) | 4 |
 | 41 | `8b5a864` | [no-desktop-top-bar.md](no-desktop-top-bar.md) | 0 (app shell) |
-| 42 | this commit | [add-assistant.md](add-assistant.md) | 7 (part 1) |
+| 42 | `4c057fa` | [add-assistant.md](add-assistant.md) | 7 (part 1) |
+| 43 | this commit | [archive-date-range-and-savings-goals.md](archive-date-range-and-savings-goals.md) | 5, 2, 4 |
 
 Commits made before MVP 0's code (`git init`, `.gitignore`, OpenSpec init) have no record.
 

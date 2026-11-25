@@ -3,7 +3,7 @@
 **Created:** 2026-11-25
 **Last edited:** 2026-11-25
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `4c057fa` feat: add the assistant, a page footer and the Nunito font
 **Branch:** `main`, parent `8b5a864`
 **OpenSpec change:** `add-assistant`, tasks 1.1–6.2, archived in this commit (`openspec/changes/archive/2026-11-25-add-assistant/`)
 **Trigger:** The developer skipped MVP 6 for now and asked for the Assistant. Scope was chosen in two questions: part 1 first; drafts filled by the model and checked by code; the developer's key with `gpt-6-luna`. Then `/opsx:apply add-assistant`, with one commit for the whole change.

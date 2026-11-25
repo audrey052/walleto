@@ -2,7 +2,7 @@
 
 This is the implementation log for this change. It lists what was created or modified, and where the result differs from `proposal.md`, `design.md` and `tasks.md`. Per-commit detail is in `openspec/commits/`.
 
-- **Status:** implemented, not archived. Still open: the developer's real-browser check.
+- **Status:** archived on 2026-11-25. The `dashboard` and `transactions` deltas were merged into the main specs and `period-picker` became a new main spec. Three dashboard requirements were reworded under 500 characters for strict validation, with no change in meaning.
 - **Date:** 2026-11-25
 - **Tests:** 397 passing (43 new):
   - `finance/tests/test_periods.py` (19);
