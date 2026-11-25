@@ -2,21 +2,6 @@ from django.conf import settings
 from django.http import Http404
 from django.shortcuts import render
 
-from .sections import SECTIONS_BY_KEY
-
-
-def _placeholder(request, key):
-    """Render a section page whose feature is not built yet."""
-    return render(
-        request,
-        "core/placeholder.html",
-        {"section": SECTIONS_BY_KEY[key]},
-    )
-
-
-def assistant(request):
-    return _placeholder(request, "assistant")
-
 
 STYLEGUIDE_ICONS = [
     "dashboard", "transactions", "wallet", "budget", "goal", "assistant",

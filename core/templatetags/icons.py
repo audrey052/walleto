@@ -19,6 +19,7 @@ PATHS = {
         '<rect x="14" y="14" width="7" height="7" rx="1.2"/>'
     ),
     "transactions": '<path d="M4 7h15m-4-4 4 4-4 4M20 17H5m4-4-4 4 4 4"/>',
+    "history": '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
     "wallet": (
         '<path d="M20 8V5a2 2 0 0 0-2-2L5 6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h15V8H5a2 2 0 0 1 0-4"/>'
         '<path d="M20 12h-5v5h5M16 14.5h.1"/>'

@@ -134,7 +134,7 @@
                           <strong class="block truncate text-control font-semibold">{{ entry.from_wallet.name }} → {{ entry.to_wallet.name }}</strong>
                           <span class="block truncate text-caption text-muted">{{ entry.note|default:"Transfer between wallets" }}</span>
                         {% else %}
-                          <strong class="block truncate text-control font-semibold">{{ entry.description }}</strong>
+                          <strong class="block truncate text-control font-semibold">{{ entry.description }}{% if entry.source == "ai" %} <span class="ml-1 rounded-chip bg-forest-tint px-1.5 py-0.5 align-middle text-[10px] font-medium text-forest" title="Recorded by the assistant" data-ai>AI</span>{% endif %}</strong>
                           {% if entry.note %}<span class="block truncate text-caption text-muted">{{ entry.note }}</span>{% endif %}
                         {% endif %}
                       </span>

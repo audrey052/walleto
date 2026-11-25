@@ -1,0 +1,6 @@
+{% for turn in turns %}{% include "assistant/_turn.html" %}{% endfor %}
+{% if swap_input %}
+  {# After an HTMX question: drop the suggestions, and swap the input if the limit is now reached. #}
+  <div id="suggestions" hx-swap-oob="delete"></div>
+  {% if limit_reached %}{% include "assistant/_input.html" with oob=True %}{% endif %}
+{% endif %}

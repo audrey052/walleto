@@ -1,0 +1,92 @@
+{% extends "layouts/app.html" %}
+{% load icons %}
+
+{% block title %}Assistant{% endblock %}
+{# The page is exactly one screen high: the conversation scrolls inside it and the question box sits at the bottom edge. #}
+{% block main_padding %}pb-0{% endblock %}
+
+{% block content %}
+  {# Screen height minus the main padding (and on phones the top bar and bottom navigation). #}
+  <div class="assistant-screen flex flex-col">
+    <div class="mb-6 flex shrink-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h1>Assistant</h1>
+        <p class="mt-1.5 text-body text-secondary">{{ active_section.subtitle }}</p>
+      </div>
+      <div class="flex items-center gap-2.5 self-start sm:self-auto">
+        {% if history %}
+          {# Earlier conversations, newest activity first; a plain <details> so it works without JavaScript. #}
+          <details class="relative" x-data @click.outside="$el.open = false" @keydown.escape="$el.open = false">
+            <summary class="btn size-9 cursor-pointer list-none px-0 [&::-webkit-details-marker]:hidden" aria-label="History" title="History">{% icon "history" size=17 %}</summary>
+            <div class="popover top-full left-0 mt-2 w-[320px] max-w-[calc(100vw-32px)] p-1.5 sm:right-0 sm:left-auto">
+              <p class="px-2.5 pt-1.5 pb-2 text-caption font-medium text-muted">Your conversations</p>
+              <ul class="flex max-h-[360px] flex-col overflow-y-auto" aria-label="Conversation history">
+                {% for chat in history %}
+                  <li>
+                    <a href="{% url 'core:assistant' %}?chat={{ chat.pk }}"
+                       class="flex flex-col gap-0.5 rounded-control px-2.5 py-2 transition-colors hover:bg-hover {% if chat.pk == conversation.pk %}bg-forest-tint{% endif %}"
+                       {% if chat.pk == conversation.pk %}aria-current="page"{% endif %}>
+                      <span class="truncate text-control text-ink">{{ chat.title }}</span>
+                      <span class="text-[11px] text-muted">{{ chat.last_at|date:"j M Y, H:i" }}</span>
+                    </a>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          </details>
+        {% endif %}
+        {% if turns %}
+          <form method="post" action="{% url 'assistant:new' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn size-9 px-0" aria-label="New chat" title="New chat">{% icon "plus" size=17 %}</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if not configured %}
+      <div class="mx-auto w-full max-w-[860px]">
+        <div class="empty-state panel">
+          <h2>The assistant isn't set up yet</h2>
+          <p class="mt-2 max-w-sm text-body text-secondary">Add OPENAI_API_KEY and OPENAI_MODEL to the .env file, then restart the server.</p>
+        </div>
+      </div>
+    {% else %}
+      {# Scrolls on its own; opens at the latest message. #}
+      <div id="chat-scroll" class="-mx-4 min-h-0 flex-1 overflow-y-auto px-4" x-data x-init="$el.scrollTop = $el.scrollHeight">
+        {# Centred chat column, 860px (wider than the Figma .assistant-page at the developer's request). #}
+        <div class="mx-auto flex min-h-full max-w-[860px] flex-col">
+          {% if not turns %}
+            <div id="suggestions" class="my-auto py-6 text-center">
+              <p class="text-body text-secondary">Ask about your spending, your budget or your savings goals. Answers use only the data you've recorded.</p>
+              <div class="mx-auto mt-8 flex max-w-[530px] flex-col gap-2.5">
+                {% for text in suggestions %}
+                  <form method="post" action="{% url 'assistant:ask' %}"
+                        hx-post="{% url 'assistant:ask' %}" hx-target="#conversation" hx-swap="beforeend"
+                        hx-disabled-elt="find button" hx-on::before-request="walletoChat.send(this)" hx-on::before-swap="walletoChat.settle()" hx-on::after-request="walletoChat.done(this, event)">
+                    {% csrf_token %}
+                    <input type="hidden" name="chat" value="{{ conversation.pk }}">
+                    <input type="hidden" name="question" value="{{ text }}">
+                    <button type="submit" class="assistant-prompt">
+                      <span class="text-[11px] text-[#a5aa97] tabular-nums">0{{ forloop.counter }}</span>
+                      <span class="flex-1">{{ text }}</span>
+                      {% icon "arrow-right" size=16 %}
+                    </button>
+                  </form>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+
+          <div id="conversation" class="flex flex-col gap-6 pt-2 pb-4" aria-live="polite">
+            {% include "assistant/_turns.html" %}
+          </div>
+        </div>
+      </div>
+
+      <div class="assistant-dock mx-auto w-full max-w-[860px] shrink-0">
+        {% include "assistant/_input.html" %}
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

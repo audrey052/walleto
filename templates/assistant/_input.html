@@ -1,0 +1,23 @@
+{% load icons %}
+{# The question box, kept at the bottom of the screen; replaced out of band when the daily limit is reached. #}
+<div id="assistant-input" {% if oob %}hx-swap-oob="true"{% endif %}>
+  {% if limit_reached %}
+    <p class="rounded-control border border-border bg-surface px-4 py-3 text-center text-control text-secondary">
+      You've asked {{ daily_limit }} questions today, the daily limit. You can ask again tomorrow.
+    </p>
+  {% else %}
+    {# Enter sends, Shift+Enter starts a new line; the box grows with the text up to about six lines. #}
+    <form method="post" action="{% url 'assistant:ask' %}" class="assistant-input"
+          hx-post="{% url 'assistant:ask' %}" hx-target="#conversation" hx-swap="beforeend"
+          hx-disabled-elt="find textarea, find button"
+          hx-on::before-request="walletoChat.send(this)" hx-on::before-swap="walletoChat.settle()" hx-on::after-request="walletoChat.done(this, event)">
+      {% csrf_token %}
+      <input type="hidden" name="chat" value="{{ conversation.pk }}">
+      <textarea name="question" rows="1" required maxlength="1000"
+                placeholder="Ask about your spending, budget or goals" aria-label="Ask the assistant a question"
+                x-data x-on:input="$el.style.height = 'auto'; $el.style.height = Math.min($el.scrollHeight, 160) + 'px'"
+                x-on:keydown.enter="if (!$event.shiftKey && !$event.isComposing) { $event.preventDefault(); if ($el.value.trim()) $el.form.requestSubmit(); }"></textarea>
+      <button type="submit" class="btn btn-primary size-9 shrink-0 self-end px-0" aria-label="Send question">{% icon "arrow-right" size=18 %}</button>
+    </form>
+  {% endif %}
+</div>

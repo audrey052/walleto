@@ -32,7 +32,7 @@
         {% include "components/profile_menu.html" %}
       </div>
       <button type="button" @click="open = !open" :aria-expanded="open" aria-label="Account menu"
-              class="sidebar-profile flex w-full items-center gap-2.5 border-t border-border py-5 text-left">
+              class="sidebar-profile flex w-full items-center gap-2.5 py-5 text-left">
         <span class="avatar">{{ user.initials }}</span>
         {# `flex` on an inner span: a display utility on .sidebar-label would beat the collapsed rule that hides it. #}
         <span class="sidebar-label min-w-0 flex-1">
@@ -47,7 +47,7 @@
   </aside>
 
   {# ---------- Workspace ---------- #}
-  <div class="workspace">
+  <div class="workspace flex min-h-screen flex-col">
     {# Phone top bar only: logo and account menu. Desktop has no top bar. #}
     <header class="flex h-16 items-center justify-between gap-4 border-b border-border bg-[#fdfdfa] px-4 md:hidden">
       <div class="flex min-w-0 items-center gap-4">
@@ -68,9 +68,13 @@
       </div>
     </header>
 
-    <main class="mx-auto max-w-[1272px] px-4 pt-7 pb-28 md:px-10 md:pt-8 md:pb-16">
+    <main class="mx-auto w-full max-w-[1272px] flex-1 px-4 pt-7 md:px-10 md:pt-8 {% block main_padding %}pb-12{% endblock %}">
       {% block content %}{% endblock %}
     </main>
+    {# Page footer: always at the bottom of the page area, above the phone's bottom navigation (pages can leave it out). #}
+    {% block footer %}
+      <footer class="app-footer">© {% now "Y" %} Walleto. All rights reserved.</footer>
+    {% endblock %}
   </div>
 
   {# ---------- Bottom navigation (below 768px) ---------- #}

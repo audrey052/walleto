@@ -3,7 +3,7 @@
 **Created:** 2026-11-25
 **Last edited:** 2026-11-25
 **Status:** Implemented
-**Commit:** this commit
+**Commit:** `8b5a864` fix: no top bar or date on desktop, clean collapsed profile
 **Branch:** `main`, parent `bd904d9`
 **OpenSpec change:** none; `openspec/specs/app-shell/spec.md` "Topbar" edited directly
 **Trigger:** The developer found the header awkward. Since `d4284f7` removed the breadcrumb and the sidebar button, the desktop top bar held only the date: a 64px empty band between the sidebar logo and the page title. They agreed to remove it. With the date then shown above the page title, they found that odd too, and chose to drop the date. Last, the collapsed sidebar showed a cut-off name and email next to the avatar.

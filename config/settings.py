@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "accounts",
     "core",
     "finance",
+    "assistant",
 ]
 
 MIDDLEWARE = [
@@ -143,3 +144,12 @@ LOGOUT_REDIRECT_URL = "accounts:login"
 # Tests create many users; the production hasher is deliberately slow.
 if "test" in sys.argv:
     PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+
+# Assistant (add-assistant design decisions 4 and 6). Key and model come from .env;
+# without either, the Assistant page says it is not set up.
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "")
+# Sent as reasoning_effort when set; some models only allow tools with "none" on Chat Completions.
+OPENAI_REASONING_EFFORT = os.environ.get("OPENAI_REASONING_EFFORT", "")
+ASSISTANT_DAILY_LIMIT = 30  # questions per user per day (Asia/Jakarta)
+ASSISTANT_MAX_TOOL_ROUNDS = 4  # tool rounds per question

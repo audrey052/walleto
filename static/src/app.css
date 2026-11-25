@@ -10,16 +10,16 @@
 @source "../../core";
 
 @font-face {
-  font-family: "Plus Jakarta Sans";
+  font-family: "Nunito";
   font-style: normal;
   font-weight: 400 800;
   font-display: swap;
-  src: url("../fonts/plus-jakarta-sans-latin.woff2") format("woff2");
+  src: url("../fonts/nunito-latin.woff2") format("woff2");
 }
 
 /* ---------- Tokens (STYLE.md sections 1-3) ---------- */
 @theme {
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
 
   --color-paper: #fafaf7;
   --color-sidebar: #f6f6f1;
@@ -335,6 +335,70 @@
   .period-day.is-edge {
     @apply bg-forest font-semibold text-white hover:bg-forest-hover;
   }
+  /* Assistant (Figma Make .assistant-page, add-assistant design decision 5) */
+  .assistant-prompt {
+    @apply flex w-full items-center gap-4 rounded-control border border-border bg-surface p-4 text-left text-control text-[#6e7460] transition-colors hover:border-[#c9d1bc] hover:bg-[#f1f4e9];
+  }
+  /* Chat-app messages: the question is a bubble on the right, the answer is plain text with its cards */
+  .assistant-message {
+    @apply text-body leading-relaxed text-ink;
+  }
+  .assistant-message.is-user {
+    @apply max-w-[80%] self-end rounded-[18px] rounded-br-[6px] bg-[#eef1e8] px-4 py-2.5;
+  }
+  /* One screen high: 100dvh minus main's top padding and the 44px footer
+     (and on phones the 64px top bar and the bottom navigation) */
+  .assistant-screen {
+    height: calc(100dvh - 64px - 28px - 44px - 64px - env(safe-area-inset-bottom));
+  }
+  @media (min-width: 48rem) {
+    .assistant-screen {
+      height: calc(100dvh - 32px - 44px);
+    }
+  }
+  /* Question box at the bottom edge of that screen */
+  .assistant-dock {
+    @apply pt-3 pb-3 md:pb-5;
+  }
+  .assistant-input {
+    @apply flex items-end gap-2.5 rounded-control border border-[#dbe1cf] bg-surface p-2 shadow-sm focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-forest;
+  }
+  .assistant-input textarea {
+    @apply max-h-40 min-h-9 min-w-0 flex-1 resize-none bg-transparent px-2 py-2 text-control leading-5 outline-none placeholder:text-placeholder;
+  }
+  /* "Thinking" bubble: three dots that pulse while the answer is on its way */
+  .assistant-thinking {
+    @apply relative inline-flex w-fit items-center gap-1.5 rounded-[18px] rounded-bl-[6px] bg-surface px-4 py-3.5 shadow-sm;
+  }
+  .assistant-thinking > span:not(.sr-only) {
+    @apply size-1.5 rounded-full bg-[#9aa691];
+    animation: assistant-dot 1.2s infinite ease-in-out;
+  }
+  .assistant-thinking > span:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+  .assistant-thinking > span:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+  @keyframes assistant-dot {
+    0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
+    30% { opacity: 1; transform: translateY(-3px); }
+  }
+
+  /* Page footer on every signed-in page: a fixed 44px band that stays at the bottom of the screen while the
+     page scrolls; on phones it rides just above the fixed bottom navigation (~64px). */
+  .app-footer {
+    @apply sticky z-20 flex h-11 items-center justify-center border-t border-border bg-sidebar px-4 text-caption text-muted;
+    bottom: calc(64px + env(safe-area-inset-bottom));
+    margin-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+  @media (min-width: 48rem) {
+    .app-footer {
+      bottom: 0;
+      margin-bottom: 0;
+    }
+  }
+
   /* Toast */
   .toast {
     @apply flex w-[340px] max-w-[calc(100vw-32px)] items-start gap-3 rounded-panel border border-border-strong bg-surface py-3 pr-3 pl-4 shadow-toast;

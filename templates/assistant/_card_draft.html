@@ -1,0 +1,33 @@
+{% load money %}
+{# A transaction waiting for the user's Save (assistant spec, "Record a transaction after confirming"). #}
+{% with card=item.card f=item.card.fields %}
+<div class="draft-card rounded-control border {% if card.state == 'pending' %}border-forest-soft bg-forest-tint{% else %}border-border bg-surface{% endif %} px-4 py-3" data-draft-state="{{ card.state }}">
+  <p class="text-caption font-medium text-secondary">
+    {% if card.state == "saved" %}Saved to Transactions{% elif card.state == "cancelled" %}Not saved{% elif card.state == "invalid" %}Couldn't save{% else %}Check before saving{% endif %}
+  </p>
+  <dl class="mt-2 flex flex-col gap-1 text-control">
+    <div class="flex justify-between gap-4"><dt class="text-secondary">Description</dt><dd class="font-medium">{{ f.description }}</dd></div>
+    <div class="flex justify-between gap-4"><dt class="text-secondary">Amount</dt><dd class="font-semibold tabular-nums {% if f.kind == 'income' %}text-forest{% endif %}">{{ f.amount|rupiah_signed:f.kind }}</dd></div>
+    <div class="flex justify-between gap-4"><dt class="text-secondary">Category</dt><dd>{{ f.category }}</dd></div>
+    <div class="flex justify-between gap-4"><dt class="text-secondary">Wallet</dt><dd>{{ f.wallet }}</dd></div>
+    <div class="flex justify-between gap-4"><dt class="text-secondary">Date</dt><dd>{{ f.date }}</dd></div>
+    {% if f.note %}<div class="flex justify-between gap-4"><dt class="text-secondary">Note</dt><dd>{{ f.note }}</dd></div>{% endif %}
+  </dl>
+  {% if card.state == "pending" %}
+    <div class="mt-3 flex gap-2.5">
+      <form method="post" action="{% url 'assistant:save_draft' item.message_id %}"
+            hx-post="{% url 'assistant:save_draft' item.message_id %}" hx-target="closest .draft-card" hx-swap="outerHTML" hx-disabled-elt="find button">
+        {% csrf_token %}<button type="submit" class="btn btn-primary">Save</button>
+      </form>
+      <form method="post" action="{% url 'assistant:cancel_draft' item.message_id %}"
+            hx-post="{% url 'assistant:cancel_draft' item.message_id %}" hx-target="closest .draft-card" hx-swap="outerHTML" hx-disabled-elt="find button">
+        {% csrf_token %}<button type="submit" class="btn">Cancel</button>
+      </form>
+    </div>
+  {% elif card.state == "saved" %}
+    <a href="{% url 'finance:transactions' %}" class="btn-text mt-2">Open Transactions</a>
+  {% elif card.state == "invalid" %}
+    <p class="mt-2 text-caption text-clay">{{ card.errors|join:" " }}</p>
+  {% endif %}
+</div>
+{% endwith %}

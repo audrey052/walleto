@@ -1,0 +1,15 @@
+{# Figures from a tool result, written by code, never by the model. #}
+<div class="rounded-control border border-border bg-surface px-4 py-3">
+  <div class="flex items-center justify-between gap-3">
+    <p class="text-caption font-medium text-secondary">{{ item.card.title }}</p>
+    {% if item.card.note and item.card.note != 'On track' %}<span class="chip" style="--chip: {% if item.card.note == 'Behind' %}var(--color-amber){% else %}var(--color-clay){% endif %}">{{ item.card.note }}</span>{% endif %}
+  </div>
+  <dl class="mt-2 flex flex-col gap-1">
+    {% for row in item.card.rows %}
+      <div class="flex items-baseline justify-between gap-4 text-control">
+        <dt class="text-secondary">{{ row.0 }}</dt>
+        <dd class="font-semibold whitespace-nowrap tabular-nums">{{ row.1 }}</dd>
+      </div>
+    {% endfor %}
+  </dl>
+</div>

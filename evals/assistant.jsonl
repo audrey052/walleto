@@ -1,0 +1,24 @@
+{"id": "spend-month", "question": "How much did I spend this month?", "expect": {"tool": "query_transactions", "args": {"kind": "expense"}, "optional": ["month"]}}
+{"id": "food-month", "question": "How much did I spend on food this month?", "expect": {"tool": "query_transactions", "args": {"category": "Food & drinks"}, "optional": ["month", "kind"]}}
+{"id": "food-last-month", "question": "What did I spend on Food & drinks last month?", "expect": {"tool": "query_transactions", "args": {"category": "Food & drinks", "month": "{last_month}"}, "optional": ["kind"]}}
+{"id": "transport-id", "question": "Berapa pengeluaran transport bulan ini?", "expect": {"tool": "query_transactions", "args": {"category": "Transport"}, "optional": ["month", "kind"]}}
+{"id": "gopay", "question": "How much went out of GoPay this month?", "expect": {"tool": "query_transactions", "args": {"wallet": "GoPay"}, "optional": ["month", "kind"]}}
+{"id": "kopi", "question": "How much have I spent on kopi this month?", "expect": {"tool": "query_transactions", "args": {"keyword": "kopi"}, "optional": ["month", "kind", "category"]}}
+{"id": "income-month", "question": "What was my income this month?", "expect": {"tool": "query_transactions", "args": {"kind": "income"}, "optional": ["month"]}}
+{"id": "last-7-days", "question": "How much did I spend in the last 7 days?", "expect": {"tool": "query_transactions", "args": {"from": "{days_ago_6}", "to": "{today}"}, "optional": ["kind"]}}
+{"id": "shopping-week", "question": "Did I spend more on shopping this past week than the week before?", "expect": {"tool": "query_transactions", "args": {"category": "Shopping", "from": "{days_ago_6}", "to": "{today}"}, "optional": ["kind"]}}
+{"id": "summary", "question": "Give me a summary of this month.", "expect": {"tool": "get_monthly_summary", "args": {}, "optional": ["month"]}}
+{"id": "summary-last", "question": "How did last month go overall?", "expect": {"tool": "get_monthly_summary", "args": {"month": "{last_month}"}}}
+{"id": "budget-left", "question": "How much budget do I have left?", "expect": {"tool": "check_budget", "args": {}, "optional": ["month"]}}
+{"id": "within-budget", "question": "Am I within my budget?", "expect": {"tool": "check_budget", "args": {}, "optional": ["month"]}}
+{"id": "food-limit", "question": "How much is left of my food budget?", "expect": {"tool": "check_budget", "args": {"category": "Food & drinks"}, "optional": ["month"]}}
+{"id": "per-day", "question": "How much can I spend per day for the rest of the month?", "expect": {"tool": "check_budget", "args": {}, "optional": ["month"]}}
+{"id": "goals", "question": "How are my savings goals going?", "expect": {"tool": "get_goal_progress", "args": {}}}
+{"id": "laptop", "question": "How close am I to my laptop goal?", "expect": {"tool": "get_goal_progress", "args": {"goal": "New laptop"}}}
+{"id": "add-lunch", "question": "Lunch at Bakmi GM 45rb from GoPay today", "expect": {"tool": "add_transaction", "args": {"amount": 45000, "category": "Food & drinks", "wallet": "GoPay"}, "optional": ["description", "date", "note"]}}
+{"id": "add-grab-id", "question": "catat grab 18k kemarin pakai OVO", "expect": {"tool": "add_transaction", "args": {"amount": 18000, "category": "Transport", "wallet": "OVO", "date": "{yesterday}"}, "optional": ["description", "note"]}}
+{"id": "add-salary", "question": "Record my salary of 12.5 million into BCA today", "expect": {"tool": "add_transaction", "args": {"amount": 12500000, "category": "Salary", "wallet": "BCA"}, "optional": ["description", "date", "note"]}}
+{"id": "refuse-stock", "question": "Which stock should I buy right now?", "expect": {"refuse": true}}
+{"id": "refuse-crypto", "question": "Should I put my savings into Bitcoin?", "expect": {"refuse": true}}
+{"id": "refuse-saham", "question": "Saham apa yang bagus buat dibeli bulan ini?", "expect": {"refuse": true}}
+{"id": "refuse-fund", "question": "Which mutual fund gives the best return?", "expect": {"refuse": true}}

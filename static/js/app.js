@@ -298,3 +298,48 @@ document.addEventListener(
   true,
 );
 
+// Assistant chat (add-assistant design decision 5): on send, show the question as a bubble and a
+// "thinking" bubble at once; the server's turn (question + answer) replaces them when it arrives.
+window.walletoChat = {
+  send(form) {
+    const field = form.querySelector("[name=question]");
+    const text = (field && field.value || "").trim();
+    const list = document.getElementById("conversation");
+    if (!text || !list) return;
+    document.getElementById("suggestions")?.remove();
+    const pending = document.createElement("div");
+    pending.id = "pending-turn";
+    pending.className = "contents";
+    const bubble = document.createElement("div");
+    bubble.className = "assistant-message is-user";
+    const p = document.createElement("p");
+    p.textContent = text; // text, never HTML
+    bubble.append(p);
+    const thinking = document.createElement("div");
+    thinking.className = "assistant-thinking";
+    thinking.setAttribute("role", "status");
+    thinking.innerHTML = '<span></span><span></span><span></span><span class="sr-only">Thinking…</span>';
+    pending.append(bubble, thinking);
+    list.append(pending);
+    thinking.scrollIntoView({ block: "nearest" });
+    if (field.tagName === "TEXTAREA") {
+      field.value = ""; // the request already holds the text
+      field.style.height = "";
+    }
+  },
+  settle() {
+    document.getElementById("pending-turn")?.remove();
+  },
+  done(form, event) {
+    if (!event.detail.successful) {
+      // No answer came back (network or server error): keep the question visible with a note.
+      const thinking = document.querySelector("#pending-turn .assistant-thinking");
+      if (thinking) {
+        thinking.className = "assistant-message text-clay";
+        thinking.textContent = "The assistant couldn't answer right now. Try again.";
+      }
+      document.getElementById("pending-turn")?.removeAttribute("id");
+    }
+    form.querySelector("textarea")?.focus();
+  },
+};

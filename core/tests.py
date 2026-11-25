@@ -64,13 +64,6 @@ class AppShellTests(TestCase):
         self.assertEqual(content.count('aria-current="page"'), 2)
         self.assertEqual(response.context["active_section"]["key"], "wallets")
 
-    def test_placeholder_page_shows_title_subtitle_and_coming_soon(self):
-        response = self.client.get(reverse("core:assistant"))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Assistant")
-        self.assertContains(response, "Ask about your spending")
-        self.assertContains(response, "Coming soon")
-
     def test_home_is_dashboard(self):
         response = self.client.get("/")
         self.assertContains(response, "Your money this month at a glance.")
@@ -108,3 +101,17 @@ class StyleguideTests(TestCase):
     def test_not_found_in_production(self):
         response = self.client.get(reverse("core:styleguide"))
         self.assertEqual(response.status_code, 404)
+
+
+class CopyrightTests(TestCase):
+    def test_copyright_on_pages_and_sign_in(self):
+        from django.utils import timezone
+
+        year = timezone.localdate().year
+        user = get_user_model().objects.create_user(email="c@example.com", password="quiet-ledger-2026", full_name="C D")
+        self.assertContains(self.client.get(reverse("accounts:login")), f"© {year} Walleto")
+        self.client.force_login(user)
+        # Once, in the page footer (not in the sidebar).
+        self.assertContains(self.client.get(reverse("finance:wallets")), f'<footer class="app-footer">© {year} Walleto. All rights reserved.</footer>', count=1, html=True)
+        # The Assistant has it too, under the chat.
+        self.assertContains(self.client.get(reverse("core:assistant")), f"© {year} Walleto", count=1)
